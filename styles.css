@@ -313,14 +313,39 @@ h1 {
     background-color: rgba(93, 156, 236, 0.1);
 }
 
-.edit-btn, .delete-btn {
+.routine-table .current-time {
+    background-color: #d4edda; /* Verde claro */
+    font-weight: bold;
+    color: #155724; /* Verde escuro para o texto */
+}
+
+.task-done {
+    text-decoration: line-through;
+    color: #aaa;
+}
+
+.task-done .activity-icon {
+    opacity: 0.5;
+}
+
+.edit-btn, .delete-btn, .check-btn {
     padding: 4px 8px;
     margin-right: 4px;
-    border: none;
+    border: 1px solid transparent;
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.8rem;
+    transition: background-color 0.2s;
+    font-size: 12px;
+    background-color: transparent;
+}
+
+.check-btn {
+    font-size: 18px; /* Ícone maior */
+    color: var(--success);
+}
+
+.check-btn:hover {
+    background-color: #e9f5ff;
 }
 
 .edit-btn {

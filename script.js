@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Adicionar atividade existente se houver
         if (routine[timeString]) {
-            activitySlot.appendChild(createActivityElement(routine[timeString], false, true));
+            activitySlot.appendChild(createActivityElement(routine[timeString].text, false, true));
         }
         
         // Montar o slot
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        routine[selectedTimeSlot] = activityText;
+        routine[selectedTimeSlot] = { text: activityText, done: false };
         saveToLocalStorage();
 
         // Atualizar a interface e desmarcar a seleção
@@ -277,15 +277,28 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateRoutineView() {
         routineTableBody.innerHTML = '';
         let hasRoutine = false;
+
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinutes = now.getMinutes();
+        const currentTimeSlot = `${currentHour.toString().padStart(2, '0')}:${currentMinutes < 30 ? '00' : '30'}`;
         
         for (let hour = 6; hour <= 21; hour++) {
             for (let minute = 0; minute < 60; minute += 30) {
                 const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                const activity = routine[timeString];
-                hasRoutine = hasRoutine || !!activity;
+                const activityData = routine[timeString];
+                hasRoutine = hasRoutine || !!activityData;
                 
                 const row = document.createElement('tr');
                 row.classList.add('fade-in');
+
+                if (timeString === currentTimeSlot) {
+                    row.classList.add('current-time');
+                }
+
+                if (activityData && activityData.done) {
+                    row.classList.add('task-done');
+                }
                 
                 // Célula de horário
                 const timeCell = document.createElement('td');
@@ -293,18 +306,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Célula de atividade (com ícone)
                 const activityCell = document.createElement('td');
-                if (activity) {
+                if (activityData) {
                     const icon = document.createElement('i');
-                    icon.className = `fas ${activityIcons[activity] || 'fa-tasks'} activity-icon`;
-                    activityCell.append(icon, ` ${activity}`);
+                    icon.className = `fas ${activityIcons[activityData.text] || 'fa-tasks'} activity-icon`;
+                    activityCell.append(icon, ` ${activityData.text}`);
                 } else {
                     activityCell.textContent = '-';
                     activityCell.classList.add('empty-slot');
                 }
+
+                // Célula de Status (Check-out)
+                const statusCell = document.createElement('td');
+                if (activityData) {
+                    const checkBtn = document.createElement('button');
+                    checkBtn.className = 'check-btn';
+                    checkBtn.innerHTML = activityData.done ? '<i class="fas fa-check-circle"></i>' : '<i class="far fa-circle"></i>';
+                    checkBtn.title = activityData.done ? 'Desmarcar' : 'Concluir';
+                    checkBtn.addEventListener('click', () => toggleTaskStatus(timeString));
+                    statusCell.appendChild(checkBtn);
+                }
                 
                 // Célula de ações
                 const actionsCell = document.createElement('td');
-                if (activity) {
+                if (activityData) {
                     const editBtn = document.createElement('button');
                     editBtn.className = 'edit-btn';
                     editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i> Editar';
@@ -318,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     actionsCell.append(editBtn, deleteBtn);
                 }
                 
-                row.append(timeCell, activityCell, actionsCell);
+                row.append(timeCell, activityCell, statusCell, actionsCell);
                 routineTableBody.appendChild(row);
             }
         }
@@ -335,10 +359,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function editActivity(timeString) {
-        const newActivity = prompt('Editar atividade:', routine[timeString]);
+        const oldText = routine[timeString] ? routine[timeString].text : '';
+        const newActivity = prompt('Editar atividade:', oldText);
         if (!newActivity || newActivity.trim() === '') return;
         
-        routine[timeString] = newActivity.trim();
+        if (routine[timeString]) {
+            routine[timeString].text = newActivity.trim();
+        }
         saveToLocalStorage();
         updateRoutineView();
         initializeTimeSlots();
@@ -359,8 +386,31 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('childActivityIcons', JSON.stringify(activityIcons));
     }
 
+    function toggleTaskStatus(timeString) {
+        if (routine[timeString]) {
+            routine[timeString].done = !routine[timeString].done;
+            saveToLocalStorage();
+            updateRoutineView();
+        }
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem('childRoutine', JSON.stringify(routine));
+        localStorage.setItem('childActivities', JSON.stringify(activities));
+        localStorage.setItem('childActivityIcons', JSON.stringify(activityIcons));
+    }
+
     function loadFromLocalStorage() {
-        routine = JSON.parse(localStorage.getItem('childRoutine')) || {};
+        let loadedRoutine = JSON.parse(localStorage.getItem('childRoutine')) || {};
+        
+        // Migração de dados do formato antigo para o novo
+        for (const time in loadedRoutine) {
+            if (typeof loadedRoutine[time] === 'string') {
+                loadedRoutine[time] = { text: loadedRoutine[time], done: false };
+            }
+        }
+        routine = loadedRoutine;
+
         activities = JSON.parse(localStorage.getItem('childActivities')) || Object.keys(activityIcons);
         
         const savedIcons = JSON.parse(localStorage.getItem('childActivityIcons'));
