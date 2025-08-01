@@ -11,21 +11,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Mapeamento de ícones para atividades
     const activityIcons = {
-        'Café da manhã': 'fa-utensils',
-        'Arrumar a cama': 'fa-bed',
-        'Fazer tarefa de casa': 'fa-book',
+        'Acordar': 'fa-sun',
+        'Tomar Café': 'fa-mug-hot',
+        'Escovar os Dentes': 'fa-tooth',
+        'Se Vestir': 'fa-tshirt',
+        'Brincar': 'fa-puzzle-piece',
         'Almoçar': 'fa-utensils',
-        'Ir para a escola': 'fa-school',
-        'Estudar (matérias diversas)': 'fa-graduation-cap',
-        'Tomar banho': 'fa-shower',
-        'Escovar os dentes': 'fa-tooth',
-        'Lanchar': 'fa-apple-alt',
-        'Estudar bateria': 'fa-drum',
-        'Estudar tabuada': 'fa-times',
-        'Ver TV': 'fa-tv',
-        'Jogar no celular': 'fa-mobile-alt',
-        'Jantar': 'fa-utensils',
-        'Dormir': 'fa-moon'
+        'Escola': 'fa-school',
+        'Dever de Casa': 'fa-book-open',
+        'Lanche': 'fa-apple-alt',
+        'Aula de Música': 'fa-music',
+        'Natação': 'fa-swimmer',
+        'Jantar': 'fa-drumstick-bite',
+        'Tomar Banho': 'fa-bath',
+        'Ler História': 'fa-book-reader',
+        'Dormir': 'fa-moon',
+        'Tia Aryele': 'fa-chalkboard-teacher',
+        'Inglês': 'fa-language',
+        'Tomar Vacina': 'fa-syringe',
+        'Mercado': 'fa-shopping-cart',
+        'Shopping': 'fa-shopping-bag',
+        'Dentista': 'fa-tooth',
+        'Material da Escola': 'fa-pencil-ruler'
     };
 
     // Dados da aplicação
@@ -411,11 +418,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         routine = loadedRoutine;
 
-        activities = JSON.parse(localStorage.getItem('childActivities')) || Object.keys(activityIcons);
-        
+        // Mesclar atividades padrão com as salvas para garantir que novas atividades sejam adicionadas
+        const defaultActivities = Object.keys(activityIcons);
+        const savedActivities = JSON.parse(localStorage.getItem('childActivities')) || [];
+        const allActivities = new Set([...defaultActivities, ...savedActivities]);
+        activities = Array.from(allActivities).sort((a, b) => a.localeCompare(b));
+
         const savedIcons = JSON.parse(localStorage.getItem('childActivityIcons'));
         if (savedIcons) {
             Object.assign(activityIcons, savedIcons);
         }
+
+        // Salvar a lista mesclada para futuras sessões
+        saveToLocalStorage();
     }
 });

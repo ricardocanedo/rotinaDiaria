@@ -153,8 +153,8 @@ h1 {
 
 .activity-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 4px;
     max-height: 200px;
     overflow-y: auto;
     padding: 5px;
@@ -163,14 +163,27 @@ h1 {
 .activity-item {
     background: var(--secondary);
     color: white;
-    padding: 8px 10px;
+    padding: 4px;
     border-radius: 6px;
     transition: all 0.2s;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.activity-icon {
+    width: 20px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.activity-text {
+    flex: 1;
 }
 
 .activity-item.clickable {
@@ -373,30 +386,34 @@ h1 {
     animation: fadeIn 0.2s ease-out forwards;
 }
 
-/* Tablet Landscape */
-@media (min-width: 768px) and (orientation: landscape) {
+/* Tablet */
+@media (min-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
     .routine-creator {
         flex-direction: row;
     }
-    
+
     .time-column {
         flex: 2;
         order: 1;
     }
-    
+
     .activity-panel {
         flex: 1;
         order: 2;
     }
-    
+
     .activity-list {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
         max-height: 400px;
     }
 }
 
 /* Desktop */
-@media (min-width: 992px) {
+@media (min-width: 1024px) {
     .container {
         max-width: 900px;
         padding: 15px;
@@ -415,25 +432,7 @@ h1 {
     }
     
     .activity-list {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         max-height: 500px;
     }
-}
-/* Mantenha todos os estilos anteriores e adicione: */
-
-.activity-item {
-    /* Mantenha os estilos existentes e adicione: */
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.activity-icon {
-    width: 20px;
-    text-align: center;
-    font-size: 0.9rem;
-}
-
-.activity-text {
-    flex: 1;
 }
