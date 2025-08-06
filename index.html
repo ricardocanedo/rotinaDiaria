@@ -11,7 +11,7 @@
     <div class="container">
         <header>
             <h1>Rotina Diária da Clarinha</h1>
-            <p>Vamos organizar ssua rotina filha de formadivertida</p>
+            <p>Vamos organizar sua rotina filha de forma divertida</p>
         </header>
 
         <div class="tabs">
@@ -21,23 +21,25 @@
 
         <div id="create" class="tab-content active">
             <div class="routine-creator">
-                <div class="time-column">
-                    <h2>Horários</h2>
-                    <div id="time-slots-container">
-                        <!-- Horários serão gerados por JavaScript -->
+                <div class="time-slots-container">
+                    <h2>Rotina Diária</h2>
+                    <div class="time-slots-wrapper">
+                        <table class="time-slots-table">
+                            <thead>
+                                <tr>
+                                    <th>Horário</th>
+                                    <th>Atividade</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="time-slots-container">
+                                <!-- Time slots will be generated here by JavaScript -->
+                            </tbody>
+                        </table>
                     </div>
-                    <button id="generate-routine" class="generate-btn">Gerar Rotina</button>
-                </div>
-
-                <div class="activity-panel">
-                    <h2>Atividades</h2>
-                    <div class="activity-list" id="activity-list">
-                        <!-- Atividades padrão serão geradas por JavaScript -->
-                    </div>
-
-                    <div class="add-activity-form">
-                        <input type="text" id="new-activity-input" class="add-activity-input" placeholder="Nova atividade...">
-                        <button id="add-activity-btn" class="add-activity-btn">Adicionar</button>
+                    <div class="actions">
+                        <button id="save-routine" class="generate-btn" data-state="save">Salvar Rotina</button>
+                        <button id="clear-routine" class="clear-btn">Limpar Tudo</button>
                     </div>
                 </div>
             </div>
@@ -46,23 +48,24 @@
         <div id="view" class="tab-content">
             <div class="routine-view">
                 <h2>Sua Rotina Diária</h2>
-                <table class="routine-table">
-                    <thead>
-                        <tr>
-                            <th>Horário</th>
-                            <th>Atividade</th>
-                            <th>Status</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="routine-table-body">
-                        <!-- Rotina será gerada por JavaScript -->
-                    </tbody>
-                </table>
+                <div id="routine-table-body">
+                    <!-- Rotina será gerada por JavaScript -->
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Load config first, then script -->
+    <script type="module" src="config.js"></script>
+    <script type="module" src="script.js" defer></script>
+    <!-- Error handling for module loading -->
+    <script>
+        window.addEventListener('error', function(event) {
+            console.error('Script error:', event);
+            alert('Ocorreu um erro ao carregar o aplicativo. Por favor, verifique o console para mais detalhes.');
+        });
+    </script>
 </body>
 </html>

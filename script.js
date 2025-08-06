@@ -1,15 +1,18 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Elementos da DOM
+import { supabase } from './config.js';
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // DOM Elements
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
     const timeSlotsContainer = document.getElementById('time-slots-container');
-    const activityList = document.getElementById('activity-list');
-    const newActivityInput = document.getElementById('new-activity-input');
-    const addActivityBtn = document.getElementById('add-activity-btn');
-    const generateRoutineBtn = document.getElementById('generate-routine');
+    const saveRoutineBtn = document.getElementById('save-routine');
+    const clearRoutineBtn = document.getElementById('clear-routine');
     const routineTableBody = document.getElementById('routine-table-body');
+    
+    // Estado para controle de rotina salva
+    let isRoutineSaved = false;
 
-    // Mapeamento de ícones para atividades
+    // Activity icons mapping
     const activityIcons = {
         'Acordar': 'fa-sun',
         'Tomar Café': 'fa-mug-hot',
@@ -32,35 +35,75 @@ document.addEventListener('DOMContentLoaded', function() {
         'Mercado': 'fa-shopping-cart',
         'Shopping': 'fa-shopping-bag',
         'Dentista': 'fa-tooth',
-        'Material da Escola': 'fa-pencil-ruler'
+        'Material da Escola': 'fa-pencil-ruler',
+        'Jogar Bola': 'fa-futebol',
     };
+    
+    // Default activities
+    const defaultActivities = Object.keys(activityIcons);
 
-    // Dados da aplicação
+    // Application state
     let routine = {};
-    let activities = Object.keys(activityIcons);
+    let activities = [...defaultActivities].sort((a, b) => a.localeCompare(b));
     let selectedTimeSlot = null;
 
-    // Inicialização
-    loadFromLocalStorage();
-    initializeTimeSlots();
-    initializeActivities();
-    setupEventListeners();
+    // Initialize
+    try {
+        await loadRoutine();
+        setupEventListeners();
+        initializeTimeSlots();
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        // Fallback to local storage if Supabase fails
+        loadFromLocalStorage();
+    }
 
     // Funções principais
     function setupEventListeners() {
-        // Navegação por abas
+        // Tab navigation
         tabButtons.forEach(button => {
-            button.addEventListener('click', () => switchTab(button.dataset.tab));
+            button.addEventListener('click', (e) => {
+                // Impede a troca para a aba de visualização se a rotina não foi salva
+                if (e.target.dataset.tab === 'view' && !isRoutineSaved) {
+                    e.preventDefault();
+                    alert('Por favor, salve a rotina antes de visualizá-la.');
+                    return;
+                }
+                switchTab(e.target.dataset.tab);
+            });
         });
 
-        // Adicionar nova atividade
-        addActivityBtn.addEventListener('click', addNewActivity);
-        newActivityInput.addEventListener('keypress', e => {
-            if (e.key === 'Enter') addNewActivity();
+        // Save routine
+        saveRoutineBtn.addEventListener('click', async () => {
+            try {
+                await saveRoutine();
+                isRoutineSaved = true;
+                saveRoutineBtn.textContent = 'Visualizar Rotina';
+                saveRoutineBtn.dataset.state = 'view';
+                switchTab('view');
+            } catch (error) {
+                console.error('Error saving routine:', error);
+                alert('Erro ao salvar a rotina. Tente novamente.');
+            }
         });
-
-        // Gerar rotina
-        generateRoutineBtn.addEventListener('click', () => switchTab('view'));
+        
+        // Clear routine
+        clearRoutineBtn.addEventListener('click', async () => {
+            if (confirm('Tem certeza que deseja limpar toda a rotina?')) {
+                try {
+                    routine = {};
+                    isRoutineSaved = false;
+                    saveRoutineBtn.textContent = 'Salvar Rotina';
+                    saveRoutineBtn.dataset.state = 'save';
+                    await saveRoutine();
+                    initializeTimeSlots(); // This will reset all selects
+                    updateRoutineView();
+                } catch (error) {
+                    console.error('Error clearing routine:', error);
+                    alert('Erro ao limpar a rotina. Tente novamente.');
+                }
+            }
+        });
     }
 
     function switchTab(tabId) {
@@ -80,289 +123,254 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let hour = 6; hour <= 21; hour++) {
             for (let minute = 0; minute < 60; minute += 30) {
                 const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                createTimeSlot(timeString);
+                createTimeSlotRow(timeString);
             }
         }
+        
+        // Update the activity selectors with current routine data
+        updateActivitySelectors();
     }
 
-    function createTimeSlot(timeString) {
-        const timeSlot = document.createElement('div');
-        timeSlot.className = 'time-slot';
-        timeSlot.dataset.time = timeString;
-
-        timeSlot.addEventListener('click', () => {
-            // Remover seleção anterior
-            const previouslySelected = document.querySelector('.time-slot.selected');
-            if (previouslySelected) {
-                previouslySelected.classList.remove('selected');
-            }
-            // Selecionar novo
-            timeSlot.classList.add('selected');
-            selectedTimeSlot = timeString;
-        });
+    function createTimeSlotRow(timeString) {
+        const row = document.createElement('tr');
+        row.className = 'time-slot-row';
+        row.dataset.time = timeString;
         
-        // Label do horário
-        const timeLabel = document.createElement('div');
-        timeLabel.className = 'time-label';
-        timeLabel.textContent = timeString;
+        // Time cell
+        const timeCell = document.createElement('td');
+        timeCell.className = 'time-slot-time';
+        timeCell.textContent = timeString;
         
-        // Slot para atividade
-        const activitySlot = document.createElement('div');
-        activitySlot.className = 'activity-slot';
+        // Activity select cell
+        const activityCell = document.createElement('td');
+        activityCell.className = 'time-slot-activity';
         
-        // Botão de remover
-        const removeBtn = createRemoveButton(() => removeActivityFromSlot(timeString));
+        // Create select element
+        const select = document.createElement('select');
+        select.className = 'time-slot-select';
+        select.dataset.time = timeString;
         
-        // Adicionar atividade existente se houver
-        if (routine[timeString]) {
-            activitySlot.appendChild(createActivityElement(routine[timeString].text, false, true));
-        }
+        // Add empty option
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = 'Selecione uma atividade';
+        select.appendChild(emptyOption);
         
-        // Montar o slot
-        timeSlot.append(timeLabel, activitySlot, removeBtn);
-        timeSlotsContainer.appendChild(timeSlot);
-    }
-
-    function initializeActivities() {
-        activityList.innerHTML = '';
+        // Add activity options
         activities.forEach(activity => {
-            activityList.appendChild(createActivityElement(activity, true, false));
+            const option = document.createElement('option');
+            option.value = activity;
+            option.textContent = activity;
+            select.appendChild(option);
         });
-    }
-
-    function createActivityElement(text, isFromActivityList, isInSlot) {
-        const activity = document.createElement('div');
-        activity.className = 'activity-item';
-        if (isInSlot) {
-            activity.classList.add('in-slot');
+        
+        // Set selected value if exists in routine
+        if (routine[timeString]) {
+            select.value = routine[timeString].text;
         }
-
-        const icon = document.createElement('i');
-        icon.className = `fas ${activityIcons[text] || 'fa-tasks'} activity-icon`;
-
-        const textSpan = document.createElement('span');
-        textSpan.textContent = text;
-
-        activity.append(icon, textSpan);
-
-        if (isFromActivityList) {
-            activity.classList.add('clickable');
-            activity.addEventListener('click', () => addActivityToSelectedSlot(text));
-
-            const actions = createActivityActions(text);
-            activity.appendChild(actions);
-        }
-
-        return activity;
-    }
-
-    function createActivityActions(text) {
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'activity-actions';
         
-        // Botão editar
-        const editBtn = document.createElement('button');
-        editBtn.className = 'activity-btn edit-activity-btn';
-        editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
-        editBtn.title = 'Editar atividade';
-        editBtn.addEventListener('click', e => {
-            e.stopPropagation();
-            editActivityInList(text);
-        });
-        
-        // Botão remover
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'activity-btn remove-activity-btn';
-        removeBtn.innerHTML = '<i class="fas fa-trash"></i>';
-        removeBtn.title = 'Remover atividade';
-        removeBtn.addEventListener('click', e => {
-            e.stopPropagation();
-            removeActivityFromList(text);
-        });
-        
-        actionsDiv.append(editBtn, removeBtn);
-        return actionsDiv;
-    }
-
-    function createRemoveButton(clickHandler) {
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-slot-btn';
-        removeBtn.innerHTML = '&times;';
-        removeBtn.addEventListener('click', e => {
-            e.stopPropagation();
-            clickHandler();
-        });
-        return removeBtn;
-    }
-
-    function addNewActivity() {
-        const newActivity = newActivityInput.value.trim();
-        if (!newActivity || activities.includes(newActivity)) return;
-        
-        activities.push(newActivity);
-        activityIcons[newActivity] = 'fa-plus-circle';
-        activityList.appendChild(createActivityElement(newActivity, true, false));
-        
-        newActivityInput.value = '';
-        saveToLocalStorage();
-    }
-
-    function editActivityInList(oldActivity) {
-        const newActivity = prompt('Editar atividade:', oldActivity);
-        if (!newActivity || newActivity.trim() === '') return;
-        
-        const index = activities.indexOf(oldActivity);
-        if (index !== -1) {
-            // Atualizar atividade
-            activities[index] = newActivity.trim();
-            
-            // Manter o ícone ou usar padrão
-            if (!activityIcons[newActivity]) {
-                activityIcons[newActivity] = activityIcons[oldActivity] || 'fa-tasks';
-            }
-            
-            // Atualizar na rotina
-            for (const time in routine) {
-                if (routine[time] === oldActivity) {
-                    routine[time] = newActivity.trim();
+        // Add change event
+        select.addEventListener('change', async (e) => {
+            const activity = e.target.value;
+            if (activity) {
+                // Atualiza a rotina e salva
+                routine[timeString] = { text: activity, done: false };
+                try {
+                    await saveRoutine();
+                    updateRoutineView();
+                    
+                    // Atualiza o seletor para refletir a seleção atual
+                    updateActivitySelectors();
+                } catch (error) {
+                    console.error('Error saving activity:', error);
+                    alert('Erro ao salvar atividade. Tente novamente.');
                 }
             }
-            
-            saveToLocalStorage();
-            initializeActivities();
-            initializeTimeSlots();
-        }
-    }
-
-    function removeActivityFromList(activity) {
-        if (!confirm(`Remover a atividade "${activity}"?`)) return;
+        });
         
-        const index = activities.indexOf(activity);
-        if (index !== -1) {
-            activities.splice(index, 1);
+        activityCell.appendChild(select);
+        
+        // Actions cell
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'time-slot-actions';
+        
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'clear-slot-btn';
+        clearBtn.title = 'Limpar atividade';
+        clearBtn.innerHTML = '<i class="fas fa-times"></i>';
+        clearBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const time = row.dataset.time;
+            delete routine[time];
             
-            // Remover da rotina
-            for (const time in routine) {
-                if (routine[time] === activity) {
-                    delete routine[time];
+            try {
+                await saveRoutine();
+                updateRoutineView();
+                
+                // Reset the select
+                const select = row.querySelector('.time-slot-select');
+                if (select) {
+                    select.value = '';
                 }
+            } catch (error) {
+                console.error('Error clearing activity:', error);
+                alert('Erro ao remover atividade. Tente novamente.');
             }
-            
-            saveToLocalStorage();
-            initializeActivities();
-            initializeTimeSlots();
-        }
+        });
+        
+        actionsCell.appendChild(clearBtn);
+        
+        // Build the row
+        row.append(timeCell, activityCell, actionsCell);
+        timeSlotsContainer.appendChild(row);
     }
 
-    function removeActivityFromSlot(timeString) {
+
+
+
+    async function removeActivityFromSlot(timeString) {
         if (routine[timeString]) {
             delete routine[timeString];
-            saveToLocalStorage();
-            initializeTimeSlots();
+            try {
+                await saveRoutine();
+                initializeTimeSlots();
+            } catch (error) {
+                console.error('Error removing activity:', error);
+                throw error;
+            }
         }
     }
 
-    function addActivityToSelectedSlot(activityText) {
-        if (!selectedTimeSlot) {
-            alert('Por favor, selecione um horário primeiro!');
-            return;
-        }
-
-        routine[selectedTimeSlot] = { text: activityText, done: false };
-        saveToLocalStorage();
-
-        // Atualizar a interface e desmarcar a seleção
-        const selectedSlotElement = document.querySelector('.time-slot.selected');
-        if (selectedSlotElement) {
-            selectedSlotElement.classList.remove('selected');
-        }
-        
-        initializeTimeSlots();
-        selectedTimeSlot = null;
+    function updateActivitySelectors() {
+        // Update all select elements with current routine data
+        document.querySelectorAll('.time-slot-select').forEach(select => {
+            const time = select.dataset.time;
+            if (routine[time]) {
+                select.value = routine[time].text;
+            } else {
+                select.value = '';
+            }
+        });
     }
 
     function updateRoutineView() {
         routineTableBody.innerHTML = '';
-        let hasRoutine = false;
-
         const now = new Date();
         const currentHour = now.getHours();
         const currentMinutes = now.getMinutes();
         const currentTimeSlot = `${currentHour.toString().padStart(2, '0')}:${currentMinutes < 30 ? '00' : '30'}`;
         
+        // Create a container for the routine list
+        const routineList = document.createElement('ul');
+        routineList.className = 'routine-list';
+        
+        // Get all time slots with activities
+        const timeSlots = [];
         for (let hour = 6; hour <= 21; hour++) {
             for (let minute = 0; minute < 60; minute += 30) {
                 const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                const activityData = routine[timeString];
-                hasRoutine = hasRoutine || !!activityData;
-                
-                const row = document.createElement('tr');
-                row.classList.add('fade-in');
-
-                if (timeString === currentTimeSlot) {
-                    row.classList.add('current-time');
+                if (routine[timeString]) {
+                    timeSlots.push({
+                        time: timeString,
+                        activity: routine[timeString]
+                    });
                 }
-
-                if (activityData && activityData.done) {
-                    row.classList.add('task-done');
-                }
-                
-                // Célula de horário
-                const timeCell = document.createElement('td');
-                timeCell.textContent = timeString;
-                
-                // Célula de atividade (com ícone)
-                const activityCell = document.createElement('td');
-                if (activityData) {
-                    const icon = document.createElement('i');
-                    icon.className = `fas ${activityIcons[activityData.text] || 'fa-tasks'} activity-icon`;
-                    activityCell.append(icon, ` ${activityData.text}`);
-                } else {
-                    activityCell.textContent = '-';
-                    activityCell.classList.add('empty-slot');
-                }
-
-                // Célula de Status (Check-out)
-                const statusCell = document.createElement('td');
-                if (activityData) {
-                    const checkBtn = document.createElement('button');
-                    checkBtn.className = 'check-btn';
-                    checkBtn.innerHTML = activityData.done ? '<i class="fas fa-check-circle"></i>' : '<i class="far fa-circle"></i>';
-                    checkBtn.title = activityData.done ? 'Desmarcar' : 'Concluir';
-                    checkBtn.addEventListener('click', () => toggleTaskStatus(timeString));
-                    statusCell.appendChild(checkBtn);
-                }
-                
-                // Célula de ações
-                const actionsCell = document.createElement('td');
-                if (activityData) {
-                    const editBtn = document.createElement('button');
-                    editBtn.className = 'edit-btn';
-                    editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i> Editar';
-                    editBtn.addEventListener('click', () => editActivity(timeString));
-                    
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Excluir';
-                    deleteBtn.addEventListener('click', () => deleteActivity(timeString));
-                    
-                    actionsCell.append(editBtn, deleteBtn);
-                }
-                
-                row.append(timeCell, activityCell, statusCell, actionsCell);
-                routineTableBody.appendChild(row);
             }
         }
         
-        if (!hasRoutine) {
-            const row = document.createElement('tr');
-            const cell = document.createElement('td');
-            cell.colSpan = 3;
-            cell.textContent = 'Nenhuma rotina criada ainda. Volte à aba "Criar Rotina" para começar.';
-            cell.style.textAlign = 'center';
-            row.appendChild(cell);
-            routineTableBody.appendChild(row);
+        if (timeSlots.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            emptyState.innerHTML = `
+                <i class="far fa-calendar-plus"></i>
+                <h3>Nenhuma rotina criada</h3>
+                <p>Volte à aba "Criar Rotina" para começar</p>
+            `;
+            routineTableBody.appendChild(emptyState);
+            return;
         }
+        
+        // Create list items for each time slot
+        timeSlots.forEach((slot, index) => {
+            const { time, activity } = slot;
+            
+            const listItem = document.createElement('li');
+            listItem.className = 'routine-item' + (activity.done ? ' task-done' : '');
+            listItem.style.animationDelay = `${index * 0.05}s`;
+            
+            if (time === currentTimeSlot) {
+                listItem.classList.add('current-time');
+            }
+            
+            // Activity container
+            const activityContainer = document.createElement('div');
+            activityContainer.className = 'activity-container';
+            
+            // Time display
+            const timeDisplay = document.createElement('span');
+            timeDisplay.className = 'routine-time-display';
+            timeDisplay.textContent = time;
+            
+            // Icon with colored background
+            const iconContainer = document.createElement('div');
+            iconContainer.className = 'activity-icon';
+            
+            const icon = document.createElement('i');
+            icon.className = `fas ${activityIcons[activity.text] || 'fa-tasks'}`;
+            iconContainer.appendChild(icon);
+            
+            // Activity text
+            const activityText = document.createElement('span');
+            activityText.className = 'activity-text';
+            activityText.textContent = activity.text;
+            
+            // Assemble activity container
+            activityContainer.appendChild(timeDisplay);
+            activityContainer.appendChild(iconContainer);
+            activityContainer.appendChild(activityText);
+            
+            // Actions container
+            const actions = document.createElement('div');
+            actions.className = 'routine-actions';
+            
+            // Check/Uncheck button
+            const checkBtn = document.createElement('button');
+            checkBtn.className = 'action-btn check-btn';
+            checkBtn.innerHTML = activity.done ? '<i class="fas fa-check"></i>' : '<i class="far fa-circle"></i>';
+            checkBtn.title = activity.done ? 'Desmarcar' : 'Concluir';
+            checkBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleTaskStatus(time);
+            });
+            
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'action-btn delete-btn';
+            deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+            deleteBtn.title = 'Excluir';
+            deleteBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm('Tem certeza que deseja remover esta atividade?')) {
+                    delete routine[time];
+                    try {
+                        await saveRoutine();
+                        updateRoutineView();
+                    } catch (error) {
+                        console.error('Error removing activity:', error);
+                        alert('Erro ao remover atividade. Tente novamente.');
+                    }
+                }
+            });
+            
+            // Add buttons to actions
+            actions.append(checkBtn, deleteBtn);
+            
+            // Assemble list item
+            listItem.append(activityContainer, actions);
+            routineList.appendChild(listItem);
+        });
+        
+        routineTableBody.appendChild(routineList);
     }
 
     function editActivity(timeString) {
@@ -378,35 +386,129 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeTimeSlots();
     }
 
-    function deleteActivity(timeString) {
+    async function deleteActivity(timeString) {
         if (confirm('Excluir esta atividade?')) {
-            delete routine[timeString];
-            saveToLocalStorage();
-            updateRoutineView();
-            initializeTimeSlots();
+            try {
+                delete routine[timeString];
+                await saveRoutine();
+                updateRoutineView();
+                initializeTimeSlots();
+            } catch (error) {
+                console.error('Error deleting activity:', error);
+                alert('Erro ao excluir atividade. Tente novamente.');
+            }
         }
     }
 
+    async function saveRoutine() {
+        try {
+            // First save to local storage as fallback
+            saveToLocalStorage();
+            
+            // Only try to save to Supabase if it's available
+            if (supabase) {
+                // Salva as atividades na tabela activities
+                const activitiesToSave = activities.map(activity => ({
+                    name: activity,
+                    icon: activityIcons[activity] || 'fa-question',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }));
+
+                // Insere ou atualiza as atividades
+                const { error: activitiesError } = await supabase
+                    .from('activities')
+                    .upsert(activitiesToSave, { onConflict: 'name' });
+
+                if (activitiesError) throw activitiesError;
+
+                // Salva a rotina na tabela routines
+                const routineToSave = {
+                    id: 1, // ID fixo para a rotina principal
+                    routine_data: routine,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { data, error: routineError } = await supabase
+                    .from('routines')
+                    .upsert(routineToSave, { onConflict: 'id' });
+
+                if (routineError) throw routineError;
+                
+                return data;
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Error saving data to Supabase:', error);
+            // Já salvamos no localStorage, então apenas registramos o erro
+            return null;
+        }
+    }
+    
     function saveToLocalStorage() {
         localStorage.setItem('childRoutine', JSON.stringify(routine));
         localStorage.setItem('childActivities', JSON.stringify(activities));
         localStorage.setItem('childActivityIcons', JSON.stringify(activityIcons));
     }
 
-    function toggleTaskStatus(timeString) {
+    async function toggleTaskStatus(timeString) {
         if (routine[timeString]) {
             routine[timeString].done = !routine[timeString].done;
-            saveToLocalStorage();
+            await saveRoutine();
             updateRoutineView();
         }
     }
 
-    function saveToLocalStorage() {
-        localStorage.setItem('childRoutine', JSON.stringify(routine));
-        localStorage.setItem('childActivities', JSON.stringify(activities));
-        localStorage.setItem('childActivityIcons', JSON.stringify(activityIcons));
-    }
+    async function loadRoutine() {
+        try {
+            // Tenta carregar do Supabase se disponível
+            if (supabase) {
+                // Carrega as atividades da tabela activities
+                const { data: activitiesData, error: activitiesError } = await supabase
+                    .from('activities')
+                    .select('*');
 
+                if (activitiesError) throw activitiesError;
+
+                // Atualiza a lista de atividades e ícones
+                if (activitiesData && activitiesData.length > 0) {
+                    activities = activitiesData.map(item => item.name);
+                    activitiesData.forEach(item => {
+                        activityIcons[item.name] = item.icon;
+                    });
+                }
+
+                // Carrega a rotina da tabela routines
+                const { data: routineData, error: routineError } = await supabase
+                    .from('routines')
+                    .select('*')
+                    .eq('id', 1)
+                    .single();
+
+                if (routineError && routineError.code !== 'PGRST116') { // PGRST116 é "recurso não encontrado"
+                    console.warn('Erro ao carregar rotina do Supabase:', routineError);
+                } else if (routineData) {
+                    // Dados encontrados no Supabase
+                    routine = routineData.routine_data || {};
+                    
+                    // Atualiza o localStorage como fallback
+                    saveToLocalStorage();
+                    return;
+                }
+            }
+            
+            // Se o Supabase não estiver disponível ou não houver dados, carrega do localStorage
+            loadFromLocalStorage();
+            
+        } catch (error) {
+            console.error('Erro ao carregar rotina, usando fallback para localStorage:', error);
+            // Fallback para localStorage
+            loadFromLocalStorage();
+        }
+    }
+    
+    // Fallback function for local storage
     function loadFromLocalStorage() {
         let loadedRoutine = JSON.parse(localStorage.getItem('childRoutine')) || {};
         
