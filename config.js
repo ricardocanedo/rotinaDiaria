@@ -1,21 +1,33 @@
-// Supabase Configuration
-let supabase = null;
+/**
+ * Configurações da aplicação
+ * 
+ * Este arquivo contém as configurações globais da aplicação,
+ * incluindo URLs da API e outras constantes que podem ser reutilizadas.
+ */
 
-try {
-    // Only initialize Supabase if the URL and key are provided
-    const SUPABASE_URL = 'https://zfqkqtvhnqbeyykgfgky.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmcWtxdHZobnFiZXl5a2dmZ2t5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzODY2NTMsImV4cCI6MjA2OTk2MjY1M30.o8nS9sg06fAaR8wDD8BSZFErDXbRvKlJtTW1ykRBqhU';
+// Configurações da API
+const API_CONFIG = {
+    // URL base da API do backend
+    BASE_URL: 'http://localhost:3000/api',
     
-    if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && 
-        SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
-        supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('Supabase client initialized successfully');
-    } else {
-        console.warn('Supabase credentials not configured. Using local storage only.');
+    // Timeout para requisições em milissegundos
+    TIMEOUT: 10000,
+    
+    // Cabeçalhos padrão para as requisições
+    HEADERS: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
     }
-} catch (error) {
-    console.error('Error initializing Supabase:', error);
-    console.warn('Falling back to local storage');
-}
+};
 
-export { supabase };
+// Configurações de armazenamento local
+const STORAGE_KEYS = {
+    CURRENT_ROUTINE: 'currentRoutineId',
+    LAST_ACTIVE_TAB: 'lastActiveTab'
+};
+
+// Exporta as configurações
+export { 
+    API_CONFIG,
+    STORAGE_KEYS
+};
