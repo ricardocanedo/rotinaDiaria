@@ -82,23 +82,38 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     // CRUD de atividades
     async function loadActivities() {
-        const { data, error } = await supabase
-            .from('activities')
-            .select('*');
-        if (error) {
+        try {
+            const { data, error } = await supabase
+                .from('activities')
+                .select('*');
+                
+            if (error) throw error;
+            
+            // Limpa os arrays atuais
+            activities = [];
+            activityIcons = {};
+            
+            if (data && data.length > 0) {
+                // Ordena as atividades alfabeticamente, considerando acentuação (pt-BR)
+                const sortedData = [...data].sort((a, b) => 
+                    a.name.localeCompare(b.name, 'pt-BR', {sensitivity: 'base'})
+                );
+                
+                // Preenche os arrays com os dados ordenados
+                sortedData.forEach(item => {
+                    activities.push(item.name);
+                    activityIcons[item.name] = item.icon;
+                });
+                
+                console.log('Atividades carregadas e ordenadas:', activities);
+            } else {
+                console.log('Nenhuma atividade encontrada no banco de dados');
+            }
+        } catch (error) {
             console.error('Erro ao carregar atividades:', error);
-            alert('Erro ao carregar atividades.');
+            alert('Erro ao carregar atividades: ' + error.message);
             activities = [];
             activityIcons = {};
-        } else {
-            activities = [];
-            activityIcons = {};
-            // Sort activities alphabetically
-            const sortedData = [...data].sort((a, b) => a.name.localeCompare(b.name));
-            sortedData.forEach(item => {
-                activities.push(item.name);
-                activityIcons[item.name] = item.icon;
-            });
         }
     }
 
@@ -230,8 +245,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         emptyOption.textContent = 'Selecione uma atividade';
         select.appendChild(emptyOption);
         
-        // Add activity options
-        activities.forEach(activity => {
+        // Add activity options in alphabetical order
+        const sortedActivities = [...activities].sort((a, b) => a.localeCompare(b, 'pt-BR', {sensitivity: 'base'}));
+        sortedActivities.forEach(activity => {
             const option = document.createElement('option');
             option.value = activity;
             option.textContent = activity;
@@ -313,8 +329,32 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Update all select elements with current routine data
         document.querySelectorAll('.time-slot-select').forEach(select => {
             const time = select.dataset.time;
-            if (routine[time]) {
-                select.value = routine[time].text;
+            const currentValue = routine[time] ? routine[time].text : '';
+            
+            // Store the current selection
+            const selectedOption = select.options[select.selectedIndex];
+            const selectedValue = selectedOption ? selectedOption.value : '';
+            
+            // Clear all options except the first one (empty option)
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // Add activities in alphabetical order
+            const sortedActivities = [...activities].sort((a, b) => a.localeCompare(b, 'pt-BR', {sensitivity: 'base'}));
+            sortedActivities.forEach(activity => {
+                const option = document.createElement('option');
+                option.value = activity;
+                option.textContent = activity;
+                select.appendChild(option);
+            });
+            
+            // Restore the selected value if it still exists
+            if (currentValue && [...select.options].some(opt => opt.value === currentValue)) {
+                select.value = currentValue;
+            } else if (selectedValue && [...select.options].some(opt => opt.value === selectedValue)) {
+                // If the current value is not valid, try to restore the previously selected value
+                select.value = selectedValue;
             } else {
                 select.value = '';
             }

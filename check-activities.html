@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verificar Atividades</title>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const activities = JSON.parse(localStorage.getItem('childActivities') || '[]');
+            const activityIcons = JSON.parse(localStorage.getItem('childActivityIcons') || '{}');
+            
+            console.log('Atividades:', activities);
+            console.log('Ícones:', activityIcons);
+            
+            // Exibir no HTML
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <h2>Atividades:</h2>
+                <pre>${JSON.stringify(activities, null, 2)}</pre>
+                <h2>Ícones:</h2>
+                <pre>${JSON.stringify(activityIcons, null, 2)}</pre>
+            `;
+            
+            // Verificar se há atividades relacionadas a café
+            const cafeActivities = activities.filter(activity => 
+                activity.toLowerCase().includes('café') || 
+                activity.toLowerCase().includes('cafe')
+            );
+            
+            if (cafeActivities.length > 0) {
+                console.log('Atividades relacionadas a café encontradas:', cafeActivities);
+                output.innerHTML += `
+                    <h2>Atividades de café encontradas:</h2>
+                    <pre>${JSON.stringify(cafeActivities, null, 2)}</pre>
+                `;
+            } else {
+                console.log('Nenhuma atividade relacionada a café encontrada.');
+                output.innerHTML += '<p>Nenhuma atividade relacionada a café encontrada no localStorage.</p>';
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>Verificar Atividades</h1>
+    <div id="output">Carregando...</div>
+</body>
+</html>
