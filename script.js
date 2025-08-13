@@ -5,12 +5,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
     const timeSlotsContainer = document.getElementById('time-slots-container');
-    const saveRoutineBtn = document.getElementById('save-routine');
     const clearRoutineBtn = document.getElementById('clear-routine');
     const routineTableBody = document.getElementById('routine-table-body');
-    
-    // Estado para controle de rotina salva
-    let isRoutineSaved = false;
 
     // Application state
     let routine = {};
@@ -91,32 +87,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Tab navigation
         tabButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                // Impede a troca para a aba de visualização se a rotina não foi salva
-                if (e.target.dataset.tab === 'view' && !isRoutineSaved) {
-                    e.preventDefault();
-                    alert('Por favor, salve a rotina antes de visualizá-la.');
-                    return;
-                }
                 switchTab(e.target.dataset.tab);
             });
         });
 
-        // Save routine
-        saveRoutineBtn.addEventListener('click', async () => {
-            try {
-                await saveRoutine();
-                isRoutineSaved = true;
-                saveRoutineBtn.textContent = 'Visualizar Rotina';
-                saveRoutineBtn.dataset.state = 'view';
-                switchTab('view');
-            } catch (error) {
-                console.error('Error saving routine:', error);
-                alert('Erro ao salvar a rotina. Tente novamente.');
+        // Auto-save functionality
+    async function autoSaveRoutine() {
+        try {
+            await saveRoutine();
+            // Atualiza a visualização se estiver na aba de visualização
+            if (document.querySelector('.tab-button[data-tab="view"].active')) {
+                updateRoutineView();
             }
-        });
+        } catch (error) {
+            console.error('Error auto-saving routine:', error);
+        }
+    }
         
         // Clear routine
-        clearRoutineBtn.addEventListener('click', async () => {
+    clearRoutineBtn.addEventListener('click', async () => {
             if (confirm('Tem certeza que deseja limpar toda a rotina?')) {
                 try {
                     routine = {};
@@ -197,22 +186,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             select.value = routine[timeString].text;
         }
         
-        // Add change event
+        // Add change event - auto-save when activity changes
         select.addEventListener('change', async (e) => {
             const activity = e.target.value;
             if (activity) {
-                // Atualiza a rotina e salva
+                // Atualiza a rotina
                 routine[timeString] = { text: activity, done: false };
-                try {
-                    await saveRoutine();
-                    updateRoutineView();
-                    
-                    // Atualiza o seletor para refletir a seleção atual
-                    updateActivitySelectors();
-                } catch (error) {
-                    console.error('Error saving activity:', error);
-                    alert('Erro ao salvar atividade. Tente novamente.');
-                }
+                // Salva automaticamente
+                await autoSaveRoutine();
+                // Atualiza o seletor para refletir a seleção atual
+                updateActivitySelectors();
             }
         });
         
