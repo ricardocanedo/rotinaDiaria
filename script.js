@@ -1,480 +1,537 @@
-// Importa as configurações da API
-import { API_CONFIG } from './config.js';
+import { supabase } from './config.js';
 
-// Tarefas pré-definidas
-const TAREFAS_PRE_DEFINIDAS = [
-    'Tomar café da manhã',
-    'Arrumar a cama',
-    'Escovar os dentes',
-    'Ir para a escola',
-    'Aula de inglês',
-    'Estudar bateria',
-    'Dormir',
-    'Jantar',
-    'Almoçar',
-    'Tomar lanche',
-    'Ver TV',
-    'Jogar',
-    'Brincar',
-    'Tomar banho',
-    'Aula com a tia Ariely',
-    'Ir no jiu-jitsu com a mamãe',
-    'Ir no mercado',
-    'Ir na vovó',
-    'Passear com a Belinha',
-    'Andar de bicicleta',
-    'Fazer lição de casa',
-    'Ler um livro',
-    'Hora do descanso',
-    'Hora da soneca',
-    'Livre' // Opção para atividades personalizadas
-];
+document.addEventListener('DOMContentLoaded', async function() {
+    // DOM Elements
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const timeSlotsContainer = document.getElementById('time-slots-container');
+    const saveRoutineBtn = document.getElementById('save-routine');
+    const clearRoutineBtn = document.getElementById('clear-routine');
+    const routineTableBody = document.getElementById('routine-table-body');
+    
+    // Estado para controle de rotina salva
+    let isRoutineSaved = false;
 
-// Elementos do DOM
-const timeSlotsContainer = document.getElementById('time-slots-container');
-const routineSelect = document.getElementById('routine-select');
-const newRoutineBtn = document.getElementById('new-routine');
-const routineNameInput = document.getElementById('routine-name');
-const saveRoutineNameBtn = document.getElementById('save-routine-name');
+    // Activity icons mapping
+    const activityIcons = {
+        'Acordar': 'fa-sun',
+        'Tomar Café': 'fa-mug-hot',
+        'Escovar os Dentes': 'fa-tooth',
+        'Se Vestir': 'fa-tshirt',
+        'Brincar': 'fa-puzzle-piece',
+        'Almoçar': 'fa-utensils',
+        'Escola': 'fa-school',
+        'Dever de Casa': 'fa-book-open',
+        'Lanche': 'fa-apple-alt',
+        'Aula de Música': 'fa-music',
+        'Natação': 'fa-swimmer',
+        'Jantar': 'fa-drumstick-bite',
+        'Tomar Banho': 'fa-bath',
+        'Ler História': 'fa-book-reader',
+        'Dormir': 'fa-moon',
+        'Tia Aryele': 'fa-chalkboard-teacher',
+        'Inglês': 'fa-language',
+        'Tomar Vacina': 'fa-syringe',
+        'Mercado': 'fa-shopping-cart',
+        'Shopping': 'fa-shopping-bag',
+        'Dentista': 'fa-tooth',
+        'Material da Escola': 'fa-pencil-ruler',
+        'Jogar Bola': 'fa-futebol',
+    };
+    
+    // Default activities
+    const defaultActivities = Object.keys(activityIcons);
 
-// Estado da aplicação
-let currentRoutineId = null;
-let activities = {};
+    // Application state
+    let routine = {};
+    let activities = [...defaultActivities].sort((a, b) => a.localeCompare(b));
+    let selectedTimeSlot = null;
 
-// Inicialização
-document.addEventListener('DOMContentLoaded', () => {
-    generateTimeSlots();
-    setupEventListeners();
-    loadRoutines();
-});
-
-// Gerar slots de horário de 30 em 30 minutos
-function generateTimeSlots() {
-    timeSlotsContainer.innerHTML = '';
-    
-    // Horário inicial (6:00) e final (22:00)
-    const startHour = 6;
-    const endHour = 22;
-    
-    for (let hour = startHour; hour <= endHour; hour++) {
-        // Adiciona horário cheio (ex: 09:00)
-        addTimeSlot(hour, 0);
-        
-        // Adiciona meia hora (ex: 09:30), exceto no último horário
-        if (hour < endHour) {
-            addTimeSlot(hour, 30);
-        }
-    }
-}
-
-function addTimeSlot(hour, minutes) {
-    const timeString = `${String(hour).padStart(2, '0')}:${String(minutes).padEnd(2, '0')}`;
-    const row = document.createElement('tr');
-    
-    // Criar as opções do select com as tarefas pré-definidas
-    const options = TAREFAS_PRE_DEFINIDAS.map(tarefa => 
-        `<option value="${tarefa}">${tarefa}</option>`
-    ).join('');
-    
-    row.innerHTML = `
-        <td>${timeString}</td>
-        <td class="activity-cell">
-            <select class="activity-select" data-time="${timeString}">
-                <option value="">Selecione uma atividade</option>
-                ${options}
-                <option value="">──────────</option>
-                <option value="outra">Outra atividade...</option>
-            </select>
-            <input type="text" class="activity-input custom-activity" 
-                   data-time="${timeString}" 
-                   placeholder="Digite a atividade"
-                   style="display: none;">
-        </td>
-        <td class="actions">
-            <button class="btn save-activity" data-time="${timeString}" title="Salvar">
-                <i class="fas fa-save"></i>
-            </button>
-        </td>
-    `;
-    
-    // Adiciona evento para mostrar campo de texto quando selecionar "Outra atividade..."
-    const select = row.querySelector('.activity-select');
-    const input = row.querySelector('.activity-input');
-    
-    select.addEventListener('change', function() {
-        if (this.value === 'outra') {
-            this.style.display = 'none';
-            input.style.display = 'block';
-            input.focus();
-        } else if (this.value) {
-            input.style.display = 'none';
-            input.value = ''; // Limpa o input personalizado
-        }
-    });
-    
-    // Se o input personalizado perder o foco e estiver vazio, volta a mostrar o select
-    input.addEventListener('blur', function() {
-        if (!this.value.trim()) {
-            this.style.display = 'none';
-            select.style.display = 'block';
-            select.value = '';
-        }
-    });
-    
-    timeSlotsContainer.appendChild(row);
-}
-
-// Configurar event listeners
-function setupEventListeners() {
-    // Salvar atividade ao clicar no botão de salvar
-    document.addEventListener('click', async (e) => {
-        if (e.target.closest('.save-activity')) {
-            const button = e.target.closest('.save-activity');
-            const time = button.dataset.time;
-            const activity = getActivityForTime(time);
-            
-            if (activity) {
-                await saveActivity(time, activity);
-            } else {
-                // Feedback visual quando não há atividade para salvar
-                const saveBtn = button;
-                const originalHTML = saveBtn.innerHTML;
-                saveBtn.innerHTML = '<i class="fas fa-exclamation"></i>';
-                saveBtn.classList.add('error');
-                
-                setTimeout(() => {
-                    saveBtn.innerHTML = originalHTML;
-                    saveBtn.classList.remove('error');
-                }, 2000);
-            }
-        }
-    });
-    
-    // Criar nova rotina
-    newRoutineBtn.addEventListener('click', () => {
-        routineSelect.value = '';
-        routineNameInput.style.display = 'inline-block';
-        saveRoutineNameBtn.style.display = 'inline-block';
-        newRoutineBtn.style.display = 'none';
-        routineNameInput.focus();
-    });
-    
-    // Salvar nome da nova rotina ao pressionar Enter
-    routineNameInput.addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter') {
-            await saveNewRoutine();
-        }
-    });
-    
-    // Salvar nome da nova rotina ao clicar no botão
-    saveRoutineNameBtn.addEventListener('click', saveNewRoutine);
-    
-    // Carregar atividades ao selecionar uma rotina
-    routineSelect.addEventListener('change', () => {
-        currentRoutineId = routineSelect.value;
-        if (currentRoutineId) {
-            loadActivities();
-        } else {
-            clearActivities();
-        }
-    });
-    
-    // Permitir salvar com Enter no campo de atividade personalizada
-    document.addEventListener('keypress', (e) => {
-        if (e.target.classList.contains('custom-activity') && e.key === 'Enter') {
-            const input = e.target;
-            const time = input.dataset.time;
-            const activity = input.value.trim();
-            
-            if (activity) {
-                saveActivity(time, activity);
-                // Esconde o input e mostra o select novamente
-                input.style.display = 'none';
-                const select = input.previousElementSibling;
-                select.style.display = 'block';
-                select.focus();
-            }
-        }
-    });
-}
-
-// Função auxiliar para salvar uma nova rotina
-async function saveNewRoutine() {
-    const routineName = routineNameInput.value.trim();
-    if (routineName) {
-        await createRoutine(routineName);
-        routineNameInput.value = '';
-        routineNameInput.style.display = 'none';
-        saveRoutineNameBtn.style.display = 'none';
-        newRoutineBtn.style.display = 'inline-block';
-    }
-}
-
-// Carregar rotinas do servidor
-async function loadRoutines() {
+    // Initialize
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
-        
-        const response = await fetch(`${API_CONFIG.BASE_URL}/rotinas`, {
-            headers: API_CONFIG.HEADERS,
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const routines = await response.json();
-        
-        routineSelect.innerHTML = '<option value="">Nova Rotina</option>';
-        routines.forEach(routine => {
-            const option = document.createElement('option');
-            option.value = routine.id;
-            option.textContent = routine.nome || `Rotina ${routine.id}`;
-            routineSelect.appendChild(option);
-        });
+        await loadRoutine();
+        setupEventListeners();
+        initializeTimeSlots();
     } catch (error) {
-        console.error('Erro ao carregar rotinas:', error);
-        if (error.name === 'AbortError') {
-            alert('A requisição demorou muito para responder. Verifique sua conexão e tente novamente.');
-        } else {
-            alert('Erro ao carregar as rotinas. Tente novamente mais tarde.');
-        }
+        console.error('Error initializing app:', error);
+        // Fallback to local storage if Supabase fails
+        loadFromLocalStorage();
     }
-}
 
-// Carregar atividades da rotina selecionada
-async function loadActivities() {
-    if (!currentRoutineId) {
-        clearActivities();
-        return;
-    }
-    
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
-        
-        const response = await fetch(`${API_CONFIG.BASE_URL}/rotinas/${currentRoutineId}/atividades`, {
-            headers: API_CONFIG.HEADERS,
-            signal: controller.signal
+    // Funções principais
+    function setupEventListeners() {
+        // Tab navigation
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                // Impede a troca para a aba de visualização se a rotina não foi salva
+                if (e.target.dataset.tab === 'view' && !isRoutineSaved) {
+                    e.preventDefault();
+                    alert('Por favor, salve a rotina antes de visualizá-la.');
+                    return;
+                }
+                switchTab(e.target.dataset.tab);
+            });
+        });
+
+        // Save routine
+        saveRoutineBtn.addEventListener('click', async () => {
+            try {
+                await saveRoutine();
+                isRoutineSaved = true;
+                saveRoutineBtn.textContent = 'Visualizar Rotina';
+                saveRoutineBtn.dataset.state = 'view';
+                switchTab('view');
+            } catch (error) {
+                console.error('Error saving routine:', error);
+                alert('Erro ao salvar a rotina. Tente novamente.');
+            }
         });
         
-        clearTimeout(timeoutId);
+        // Clear routine
+        clearRoutineBtn.addEventListener('click', async () => {
+            if (confirm('Tem certeza que deseja limpar toda a rotina?')) {
+                try {
+                    routine = {};
+                    isRoutineSaved = false;
+                    saveRoutineBtn.textContent = 'Salvar Rotina';
+                    saveRoutineBtn.dataset.state = 'save';
+                    await saveRoutine();
+                    initializeTimeSlots(); // This will reset all selects
+                    updateRoutineView();
+                } catch (error) {
+                    console.error('Error clearing routine:', error);
+                    alert('Erro ao limpar a rotina. Tente novamente.');
+                }
+            }
+        });
+    }
+
+    function switchTab(tabId) {
+        // Atualizar botões das abas
+        tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
         
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
+        // Atualizar conteúdo das abas
+        tabContents.forEach(content => content.classList.toggle('active', content.id === tabId));
+        
+        // Atualizar visualização se necessário
+        if (tabId === 'view') updateRoutineView();
+    }
+
+    function initializeTimeSlots() {
+        timeSlotsContainer.innerHTML = '';
+        
+        for (let hour = 6; hour <= 21; hour++) {
+            for (let minute = 0; minute < 60; minute += 30) {
+                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                createTimeSlotRow(timeString);
+            }
         }
         
-        const activities = await response.json();
+        // Update the activity selectors with current routine data
+        updateActivitySelectors();
+    }
+
+    function createTimeSlotRow(timeString) {
+        const row = document.createElement('tr');
+        row.className = 'time-slot-row';
+        row.dataset.time = timeString;
         
-        // Limpar todos os campos de entrada
-        clearActivities();
+        // Time cell
+        const timeCell = document.createElement('td');
+        timeCell.className = 'time-slot-time';
+        timeCell.textContent = timeString;
         
-        // Preencher com as atividades salvas
+        // Activity select cell
+        const activityCell = document.createElement('td');
+        activityCell.className = 'time-slot-activity';
+        
+        // Create select element
+        const select = document.createElement('select');
+        select.className = 'time-slot-select';
+        select.dataset.time = timeString;
+        
+        // Add empty option
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = 'Selecione uma atividade';
+        select.appendChild(emptyOption);
+        
+        // Add activity options
         activities.forEach(activity => {
-            const time = activity.hora;
-            const title = activity.titulo;
-            
-            // Encontra a linha correspondente ao horário
-            const row = document.querySelector(`.activity-select[data-time="${time}"]`)?.closest('tr') ||
-                       document.querySelector(`.activity-input[data-time="${time}"]`)?.closest('tr');
-            
-            if (!row) return;
-            
-            const select = row.querySelector('.activity-select');
-            const customInput = row.querySelector('.custom-activity');
-            
-            // Verifica se a atividade está na lista de pré-definidas
-            const isPredefined = TAREFAS_PRE_DEFINIDAS.includes(title);
-            
-            if (isPredefined) {
-                // Se for uma atividade pré-definida, seleciona no select
-                select.value = title;
-                if (customInput) customInput.style.display = 'none';
-            } else {
-                // Se for uma atividade personalizada, mostra o input
-                select.value = 'outra';
-                select.style.display = 'none';
-                if (customInput) {
-                    customInput.style.display = 'block';
-                    customInput.value = title;
+            const option = document.createElement('option');
+            option.value = activity;
+            option.textContent = activity;
+            select.appendChild(option);
+        });
+        
+        // Set selected value if exists in routine
+        if (routine[timeString]) {
+            select.value = routine[timeString].text;
+        }
+        
+        // Add change event
+        select.addEventListener('change', async (e) => {
+            const activity = e.target.value;
+            if (activity) {
+                // Atualiza a rotina e salva
+                routine[timeString] = { text: activity, done: false };
+                try {
+                    await saveRoutine();
+                    updateRoutineView();
+                    
+                    // Atualiza o seletor para refletir a seleção atual
+                    updateActivitySelectors();
+                } catch (error) {
+                    console.error('Error saving activity:', error);
+                    alert('Erro ao salvar atividade. Tente novamente.');
                 }
             }
         });
-    } catch (error) {
-        console.error('Erro ao carregar atividades:', error);
-        if (error.name === 'AbortError') {
-            alert('A requisição demorou muito para responder. Verifique sua conexão e tente novamente.');
-        } else {
-            alert('Erro ao carregar as atividades. Tente novamente mais tarde.');
-        }
-    }
-}
-
-// Limpar atividades da tela
-function clearActivities() {
-    document.querySelectorAll('.activity-input').forEach(input => {
-        input.value = '';
-    });
-}
-
-// Criar nova rotina no servidor
-async function createRoutine(name) {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
         
-        const response = await fetch(`${API_CONFIG.BASE_URL}/rotinas`, {
-            method: 'POST',
-            headers: API_CONFIG.HEADERS,
-            body: JSON.stringify({ nome: name }),
-            signal: controller.signal
+        activityCell.appendChild(select);
+        
+        // Actions cell
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'time-slot-actions';
+        
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'clear-slot-btn';
+        clearBtn.title = 'Limpar atividade';
+        clearBtn.innerHTML = '<i class="fas fa-times"></i>';
+        clearBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const time = row.dataset.time;
+            delete routine[time];
+            
+            try {
+                await saveRoutine();
+                updateRoutineView();
+                
+                // Reset the select
+                const select = row.querySelector('.time-slot-select');
+                if (select) {
+                    select.value = '';
+                }
+            } catch (error) {
+                console.error('Error clearing activity:', error);
+                alert('Erro ao remover atividade. Tente novamente.');
+            }
         });
         
-        clearTimeout(timeoutId);
+        actionsCell.appendChild(clearBtn);
         
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const newRoutine = await response.json();
-        
-        // Atualiza a lista de rotinas e seleciona a nova rotina
-        await loadRoutines();
-        routineSelect.value = newRoutine.id;
-        currentRoutineId = newRoutine.id;
-        
-        return newRoutine;
-    } catch (error) {
-        console.error('Erro ao criar rotina:', error);
-        if (error.name === 'AbortError') {
-            alert('A requisição demorou muito para responder. Verifique sua conexão e tente novamente.');
-        } else if (error.message.includes('400')) {
-            alert('O nome da rotina é inválido. Por favor, escolha outro nome.');
-        } else if (error.message.includes('409')) {
-            alert('Já existe uma rotina com este nome. Por favor, escolha outro nome.');
-        } else {
-            alert('Erro ao criar a rotina. Tente novamente mais tarde.');
-        }
-        throw error; // Propaga o erro para quem chamou a função
+        // Build the row
+        row.append(timeCell, activityCell, actionsCell);
+        timeSlotsContainer.appendChild(row);
     }
-}
 
-// Salvar atividade no servidor
-async function saveActivity(time, title) {
-    if (!currentRoutineId) {
-        alert('Por favor, selecione ou crie uma rotina antes de adicionar atividades.');
-        return;
+
+
+
+    async function removeActivityFromSlot(timeString) {
+        if (routine[timeString]) {
+            delete routine[timeString];
+            try {
+                await saveRoutine();
+                initializeTimeSlots();
+            } catch (error) {
+                console.error('Error removing activity:', error);
+                throw error;
+            }
+        }
     }
-    
-    if (!title || !title.trim()) {
-        alert('Por favor, insira um título para a atividade.');
-        return;
+
+    function updateActivitySelectors() {
+        // Update all select elements with current routine data
+        document.querySelectorAll('.time-slot-select').forEach(select => {
+            const time = select.dataset.time;
+            if (routine[time]) {
+                select.value = routine[time].text;
+            } else {
+                select.value = '';
+            }
+        });
     }
-    
-    const saveBtn = document.querySelector(`.save-activity[data-time="${time}"]`);
-    const originalHTML = saveBtn?.innerHTML;
-    
-    try {
-        // Mostra feedback visual de carregamento
-        if (saveBtn) {
-            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            saveBtn.disabled = true;
+
+    function updateRoutineView() {
+        routineTableBody.innerHTML = '';
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinutes = now.getMinutes();
+        const currentTimeSlot = `${currentHour.toString().padStart(2, '0')}:${currentMinutes < 30 ? '00' : '30'}`;
+        
+        // Create a container for the routine list
+        const routineList = document.createElement('ul');
+        routineList.className = 'routine-list';
+        
+        // Get all time slots with activities
+        const timeSlots = [];
+        for (let hour = 6; hour <= 21; hour++) {
+            for (let minute = 0; minute < 60; minute += 30) {
+                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                if (routine[timeString]) {
+                    timeSlots.push({
+                        time: timeString,
+                        activity: routine[timeString]
+                    });
+                }
+            }
         }
         
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+        if (timeSlots.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            emptyState.innerHTML = `
+                <i class="far fa-calendar-plus"></i>
+                <h3>Nenhuma rotina criada</h3>
+                <p>Volte à aba "Criar Rotina" para começar</p>
+            `;
+            routineTableBody.appendChild(emptyState);
+            return;
+        }
         
-        const response = await fetch(`${API_CONFIG.BASE_URL}/rotinas/${currentRoutineId}/atividades`, {
-            method: 'POST',
-            headers: API_CONFIG.HEADERS,
-            body: JSON.stringify({
-                hora: time,
-                titulo: title.trim()
-            }),
-            signal: controller.signal
+        // Create list items for each time slot
+        timeSlots.forEach((slot, index) => {
+            const { time, activity } = slot;
+            
+            const listItem = document.createElement('li');
+            listItem.className = 'routine-item' + (activity.done ? ' task-done' : '');
+            listItem.style.animationDelay = `${index * 0.05}s`;
+            
+            if (time === currentTimeSlot) {
+                listItem.classList.add('current-time');
+            }
+            
+            // Activity container
+            const activityContainer = document.createElement('div');
+            activityContainer.className = 'activity-container';
+            
+            // Time display
+            const timeDisplay = document.createElement('span');
+            timeDisplay.className = 'routine-time-display';
+            timeDisplay.textContent = time;
+            
+            // Icon with colored background
+            const iconContainer = document.createElement('div');
+            iconContainer.className = 'activity-icon';
+            
+            const icon = document.createElement('i');
+            icon.className = `fas ${activityIcons[activity.text] || 'fa-tasks'}`;
+            iconContainer.appendChild(icon);
+            
+            // Activity text
+            const activityText = document.createElement('span');
+            activityText.className = 'activity-text';
+            activityText.textContent = activity.text;
+            
+            // Assemble activity container
+            activityContainer.appendChild(timeDisplay);
+            activityContainer.appendChild(iconContainer);
+            activityContainer.appendChild(activityText);
+            
+            // Actions container
+            const actions = document.createElement('div');
+            actions.className = 'routine-actions';
+            
+            // Check/Uncheck button
+            const checkBtn = document.createElement('button');
+            checkBtn.className = 'action-btn check-btn';
+            checkBtn.innerHTML = activity.done ? '<i class="fas fa-check"></i>' : '<i class="far fa-circle"></i>';
+            checkBtn.title = activity.done ? 'Desmarcar' : 'Concluir';
+            checkBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleTaskStatus(time);
+            });
+            
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'action-btn delete-btn';
+            deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+            deleteBtn.title = 'Excluir';
+            deleteBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm('Tem certeza que deseja remover esta atividade?')) {
+                    delete routine[time];
+                    try {
+                        await saveRoutine();
+                        updateRoutineView();
+                    } catch (error) {
+                        console.error('Error removing activity:', error);
+                        alert('Erro ao remover atividade. Tente novamente.');
+                    }
+                }
+            });
+            
+            // Add buttons to actions
+            actions.append(checkBtn, deleteBtn);
+            
+            // Assemble list item
+            listItem.append(activityContainer, actions);
+            routineList.appendChild(listItem);
         });
         
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        // Atualiza a lista de atividades
-        await loadActivities();
-        
-        // Feedback visual de sucesso
-        if (saveBtn) {
-            saveBtn.innerHTML = '<i class="fas fa-check"></i>';
-            saveBtn.classList.add('saved');
-            
-            // Volta ao ícone original após 2 segundos
-            setTimeout(() => {
-                if (saveBtn) {
-                    saveBtn.innerHTML = originalHTML;
-                    saveBtn.classList.remove('saved');
-                    saveBtn.disabled = false;
-                }
-            }, 2000);
-        }
-        
-        return true;
-    } catch (error) {
-        console.error('Erro ao salvar atividade:', error);
-        
-        // Feedback visual de erro
-        if (saveBtn) {
-            saveBtn.innerHTML = '<i class="fas fa-exclamation"></i>';
-            saveBtn.classList.add('error');
-            
-            // Volta ao ícone original após 2 segundos
-            setTimeout(() => {
-                if (saveBtn) {
-                    saveBtn.innerHTML = originalHTML;
-                    saveBtn.classList.remove('error');
-                    saveBtn.disabled = false;
-                }
-            }, 2000);
-        }
-        
-        // Mensagem de erro amigável
-        if (error.name === 'AbortError') {
-            alert('A requisição demorou muito para responder. Verifique sua conexão e tente novamente.');
-        } else if (error.message.includes('400')) {
-            alert('Os dados da atividade são inválidos. Por favor, verifique e tente novamente.');
-        } else if (error.message.includes('404')) {
-            alert('Rotina não encontrada. Por favor, recarregue a página e tente novamente.');
-        } else {
-            alert('Erro ao salvar a atividade. Tente novamente mais tarde.');
-        }
-        
-        return false;
+        routineTableBody.appendChild(routineList);
     }
-}
 
-// Função auxiliar para obter a atividade de um horário específico
-function getActivityForTime(time) {
-    const row = document.querySelector(`tr[data-time="${time}"]`) || 
-               document.querySelector(`.activity-select[data-time="${time}"]`)?.closest('tr') ||
-               document.querySelector(`.activity-input[data-time="${time}"]`)?.closest('tr');
-    
-    if (!row) return null;
-    
-    // Primeiro verifica se há um input de texto visível
-    const customInput = row.querySelector('.custom-activity');
-    if (customInput && customInput.style.display !== 'none') {
-        return customInput.value.trim();
+    function editActivity(timeString) {
+        const oldText = routine[timeString] ? routine[timeString].text : '';
+        const newActivity = prompt('Editar atividade:', oldText);
+        if (!newActivity || newActivity.trim() === '') return;
+        
+        if (routine[timeString]) {
+            routine[timeString].text = newActivity.trim();
+        }
+        saveToLocalStorage();
+        updateRoutineView();
+        initializeTimeSlots();
+    }
+
+    async function deleteActivity(timeString) {
+        if (confirm('Excluir esta atividade?')) {
+            try {
+                delete routine[timeString];
+                await saveRoutine();
+                updateRoutineView();
+                initializeTimeSlots();
+            } catch (error) {
+                console.error('Error deleting activity:', error);
+                alert('Erro ao excluir atividade. Tente novamente.');
+            }
+        }
+    }
+
+    async function saveRoutine() {
+        try {
+            // First save to local storage as fallback
+            saveToLocalStorage();
+            
+            // Only try to save to Supabase if it's available
+            if (supabase) {
+                // Salva as atividades na tabela activities
+                const activitiesToSave = activities.map(activity => ({
+                    name: activity,
+                    icon: activityIcons[activity] || 'fa-question',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }));
+
+                // Insere ou atualiza as atividades
+                const { error: activitiesError } = await supabase
+                    .from('activities')
+                    .upsert(activitiesToSave, { onConflict: 'name' });
+
+                if (activitiesError) throw activitiesError;
+
+                // Salva a rotina na tabela routines
+                const routineToSave = {
+                    id: 1, // ID fixo para a rotina principal
+                    routine_data: routine,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { data, error: routineError } = await supabase
+                    .from('routines')
+                    .upsert(routineToSave, { onConflict: 'id' });
+
+                if (routineError) throw routineError;
+                
+                return data;
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Error saving data to Supabase:', error);
+            // Já salvamos no localStorage, então apenas registramos o erro
+            return null;
+        }
     }
     
-    // Se não, verifica o select
-    const select = row.querySelector('.activity-select');
-    if (select && select.value && select.value !== 'outra') {
-        return select.value;
+    function saveToLocalStorage() {
+        localStorage.setItem('childRoutine', JSON.stringify(routine));
+        localStorage.setItem('childActivities', JSON.stringify(activities));
+        localStorage.setItem('childActivityIcons', JSON.stringify(activityIcons));
+    }
+
+    async function toggleTaskStatus(timeString) {
+        if (routine[timeString]) {
+            routine[timeString].done = !routine[timeString].done;
+            await saveRoutine();
+            updateRoutineView();
+        }
+    }
+
+    async function loadRoutine() {
+        try {
+            // Tenta carregar do Supabase se disponível
+            if (supabase) {
+                // Carrega as atividades da tabela activities
+                const { data: activitiesData, error: activitiesError } = await supabase
+                    .from('activities')
+                    .select('*');
+
+                if (activitiesError) throw activitiesError;
+
+                // Atualiza a lista de atividades e ícones
+                if (activitiesData && activitiesData.length > 0) {
+                    activities = activitiesData.map(item => item.name);
+                    activitiesData.forEach(item => {
+                        activityIcons[item.name] = item.icon;
+                    });
+                }
+
+                // Carrega a rotina da tabela routines
+                const { data: routineData, error: routineError } = await supabase
+                    .from('routines')
+                    .select('*')
+                    .eq('id', 1)
+                    .single();
+
+                if (routineError && routineError.code !== 'PGRST116') { // PGRST116 é "recurso não encontrado"
+                    console.warn('Erro ao carregar rotina do Supabase:', routineError);
+                } else if (routineData) {
+                    // Dados encontrados no Supabase
+                    routine = routineData.routine_data || {};
+                    
+                    // Atualiza o localStorage como fallback
+                    saveToLocalStorage();
+                    return;
+                }
+            }
+            
+            // Se o Supabase não estiver disponível ou não houver dados, carrega do localStorage
+            loadFromLocalStorage();
+            
+        } catch (error) {
+            console.error('Erro ao carregar rotina, usando fallback para localStorage:', error);
+            // Fallback para localStorage
+            loadFromLocalStorage();
+        }
     }
     
-    return null;
-}
+    // Fallback function for local storage
+    function loadFromLocalStorage() {
+        let loadedRoutine = JSON.parse(localStorage.getItem('childRoutine')) || {};
+        
+        // Migração de dados do formato antigo para o novo
+        for (const time in loadedRoutine) {
+            if (typeof loadedRoutine[time] === 'string') {
+                loadedRoutine[time] = { text: loadedRoutine[time], done: false };
+            }
+        }
+        routine = loadedRoutine;
+
+        // Mesclar atividades padrão com as salvas para garantir que novas atividades sejam adicionadas
+        const defaultActivities = Object.keys(activityIcons);
+        const savedActivities = JSON.parse(localStorage.getItem('childActivities')) || [];
+        const allActivities = new Set([...defaultActivities, ...savedActivities]);
+        activities = Array.from(allActivities).sort((a, b) => a.localeCompare(b));
+
+        const savedIcons = JSON.parse(localStorage.getItem('childActivityIcons'));
+        if (savedIcons) {
+            Object.assign(activityIcons, savedIcons);
+        }
+
+        // Salvar a lista mesclada para futuras sessões
+        saveToLocalStorage();
+    }
+});
