@@ -106,21 +106,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Clear routine
     clearRoutineBtn.addEventListener('click', async () => {
-            if (confirm('Tem certeza que deseja limpar toda a rotina?')) {
-                try {
-                    routine = {};
-                    isRoutineSaved = false;
-                    saveRoutineBtn.textContent = 'Salvar Rotina';
-                    saveRoutineBtn.dataset.state = 'save';
-                    await saveRoutine();
-                    initializeTimeSlots(); // This will reset all selects
-                    updateRoutineView();
-                } catch (error) {
-                    console.error('Error clearing routine:', error);
-                    alert('Erro ao limpar a rotina. Tente novamente.');
-                }
+        if (confirm('Tem certeza que deseja limpar toda a rotina?')) {
+            try {
+                routine = {};
+                await saveRoutine();
+                initializeTimeSlots(); // Isso irá redefinir todos os seletores
+                updateRoutineView();
+                // Mostra mensagem de sucesso
+                alert('Rotina limpa com sucesso!');
+            } catch (error) {
+                console.error('Error clearing routine:', error);
+                alert('Erro ao limpar a rotina. Tente novamente.');
             }
-        });
+        }
+    });
     }
 
     function switchTab(tabId) {
