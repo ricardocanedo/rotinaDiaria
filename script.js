@@ -1,5 +1,54 @@
 import { supabase } from './supabaseClient.js';
 
+// Função para garantir que a tabela user_data existe
+async function ensureUserDataTable() {
+    try {
+        // Verifica se a tabela user_data existe
+        const { data: tableExists, error: checkError } = await supabase
+            .from('information_schema.tables')
+            .select('table_name')
+            .eq('table_schema', 'public')
+            .eq('table_name', 'user_data')
+            .single();
+
+        if (checkError && checkError.code !== 'PGRST116') { // 116 = nenhum resultado
+            console.error('Erro ao verificar tabela user_data:', checkError);
+            return false;
+        }
+
+        if (!tableExists) {
+            console.log('Tabela user_data não encontrada, criando...');
+            // Cria a tabela user_data se não existir
+            const { error: createError } = await supabase.rpc(`
+                CREATE TABLE IF NOT EXISTS public.user_data (
+                    id bigint PRIMARY KEY,
+                    coins integer NOT NULL DEFAULT 0,
+                    created_at timestamp with time zone DEFAULT now(),
+                    updated_at timestamp with time zone DEFAULT now()
+                );
+            `);
+
+            if (createError) throw createError;
+            console.log('Tabela user_data criada com sucesso!');
+        }
+        
+        // Garante que existe um registro com ID 1
+        const { error: upsertError } = await supabase
+            .from('user_data')
+            .upsert(
+                { id: 1, coins: 0 },
+                { onConflict: 'id', returning: 'minimal' }
+            );
+            
+        if (upsertError) throw upsertError;
+        
+        return true;
+    } catch (error) {
+        console.error('Erro ao garantir a tabela user_data:', error);
+        return false;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     // DOM Elements
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -7,6 +56,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     const timeSlotsContainer = document.getElementById('time-slots-container');
     const clearRoutineBtn = document.getElementById('clear-routine');
     const routineTableBody = document.getElementById('routine-table-body');
+    const coinCountElement = document.getElementById('coin-count');
+    
+    // Estado dos coins
+    let coins = 0;
 
     // Application state
     let routine = {};
@@ -16,13 +69,16 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Initialize
     try {
+        // Garante que a tabela user_data existe antes de carregar os dados
+        await ensureUserDataTable();
         await loadActivities();
         await loadRoutine();
+        await loadCoins(); // Carrega os coins salvos
         setupEventListeners();
         initializeTimeSlots();
     } catch (error) {
         console.error('Error initializing app:', error);
-        alert('Erro ao inicializar o app.');
+        alert('Erro ao inicializar o app: ' + error.message);
     }
     // CRUD de atividades
     async function loadActivities() {
@@ -37,7 +93,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else {
             activities = [];
             activityIcons = {};
-            data.forEach(item => {
+            // Sort activities alphabetically
+            const sortedData = [...data].sort((a, b) => a.name.localeCompare(b.name));
+            sortedData.forEach(item => {
                 activities.push(item.name);
                 activityIcons[item.name] = item.icon;
             });
@@ -399,13 +457,42 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function deleteActivity(timeString) {
         if (confirm('Excluir esta atividade?')) {
             try {
+                // Verifica se a atividade existe e está marcada como concluída
+                const wasCompleted = routine[timeString]?.done || false;
+                
+                // Remove a atividade da rotina
                 delete routine[timeString];
-                await saveRoutine();
+                
+                // Se a atividade estava concluída, ajusta a contagem de moedas
+                if (wasCompleted) {
+                    coins = Math.max(0, coins - 1);
+                    if (coinCountElement) {
+                        coinCountElement.textContent = coins;
+                    }
+                }
+                
+                // Salva a rotina e os coins atualizados
+                await Promise.all([
+                    saveRoutine(),
+                    saveCoins()
+                ]);
+                
+                // Atualiza a visualização e os slots de tempo
                 updateRoutineView();
                 initializeTimeSlots();
+                
+                console.log('Atividade excluída. Coins atualizados para:', coins);
+                
             } catch (error) {
                 console.error('Error deleting activity:', error);
                 alert('Erro ao excluir atividade. Tente novamente.');
+                
+                // Em caso de erro, tenta recarregar os dados para garantir consistência
+                try {
+                    await loadCoins();
+                } catch (reloadError) {
+                    console.error('Erro ao recarregar os dados:', reloadError);
+                }
             }
         }
     }
@@ -435,12 +522,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // Salva a rotina na tabela routines
                 const routineToSave = {
                     id: 1, // ID fixo para a rotina principal
-                    routine_data: routine,
+                    routine_data: routine, // Coluna routine_data na tabela routines
                     updated_at: new Date().toISOString()
                 };
 
                 const { data, error: routineError } = await supabase
-                    .from('routines')
+                    .from('routines') // Nome correto da tabela
                     .upsert(routineToSave, { onConflict: 'id' });
 
                 if (routineError) throw routineError;
@@ -462,11 +549,257 @@ document.addEventListener('DOMContentLoaded', async function() {
         localStorage.setItem('childActivityIcons', JSON.stringify(activityIcons));
     }
 
+    // Funções para gerenciar coins
+    function updateCoinDisplay() {
+        if (!coinCountElement) return;
+        
+        // Conta quantas tarefas estão marcadas como concluídas
+        const completedTasks = Object.values(routine).filter(task => task.done).length;
+        
+        // Se não houver rotina ou tarefas, define coins como 0
+        if (Object.keys(routine).length === 0) {
+            console.log('Nenhuma rotina encontrada, definindo coins para 0');
+            coins = 0;
+        } else {
+            // Garante que o valor de coins não seja maior que o número de tarefas concluídas
+            coins = Math.min(coins, completedTasks);
+        }
+        
+        // Atualiza o contador na interface
+        coinCountElement.textContent = coins;
+        
+        // Anima o ícone se houver tarefas concluídas
+        const coinIcon = document.querySelector('.coin-counter i');
+        if (coinIcon && coins > 0) {
+            coinIcon.classList.add('coin-animation');
+            setTimeout(() => coinIcon.classList.remove('coin-animation'), 500);
+        }
+        
+        // Força o salvamento no banco de dados se o valor foi alterado
+        saveCoins().then(() => {
+            console.log('Coins atualizados para:', coins);
+        }).catch(error => {
+            console.error('Erro ao salvar coins:', error);
+        });
+    }
+
+    async function saveCoins() {
+        console.log('Salvando coins:', coins);
+        
+        try {
+            // Atualiza o localStorage imediatamente para feedback visual mais rápido
+            localStorage.setItem('childCoins', coins.toString());
+            console.log('Salvo no localStorage:', coins);
+            
+            // Atualiza o banco de dados se o Supabase estiver disponível
+            if (supabase) {
+                console.log('Tentando salvar no Supabase...');
+                
+                // Primeiro, verifica se o registro já existe
+                const { data: existingData, error: selectError } = await supabase
+                    .from('user_data')
+                    .select('id, coins')
+                    .eq('id', 1)
+                    .single();
+                
+                console.log('Dados existentes:', existingData, 'Erro:', selectError);
+                
+                // Se não existir, insere um novo registro
+                if (selectError && selectError.code === 'PGRST116') {
+                    console.log('Inserindo novo registro...');
+                    const { data, error: insertError } = await supabase
+                        .from('user_data')
+                        .insert([{ 
+                            id: 1, 
+                            coins: coins,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        }])
+                        .select();
+                    
+                    console.log('Resultado da inserção:', data, 'Erro:', insertError);
+                    
+                    if (insertError) throw insertError;
+                    return data;
+                } 
+                // Se existir, atualiza o registro existente
+                else if (!selectError) {
+                    console.log('Atualizando registro existente...');
+                    const { data, error: updateError } = await supabase
+                        .from('user_data')
+                        .update({ 
+                            coins: coins,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', 1)
+                        .select();
+                    
+                    console.log('Resultado da atualização:', data, 'Erro:', updateError);
+                    
+                    if (updateError) throw updateError;
+                    return data;
+                } else {
+                    throw selectError;
+                }
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Erro ao salvar coins:', error);
+            throw error; // Propaga o erro para quem chamou
+        }
+    }
+
+    async function resetCoins() {
+        console.log('Redefinindo coins para 0...');
+        coins = 0;
+        if (coinCountElement) {
+            coinCountElement.textContent = '0';
+        }
+        await saveCoins();
+    }
+
+    async function loadCoins() {
+        console.log('Carregando coins...');
+        
+        try {
+            // Se não houver rotina definida, reseta os coins para 0
+            if (Object.keys(routine).length === 0) {
+                console.log('Nenhuma rotina encontrada, redefinindo coins...');
+                await resetCoins();
+                return;
+            }
+            
+            // Conta as tarefas concluídas atuais
+            const completedTasks = Object.values(routine).filter(task => task.done).length;
+            console.log('Tarefas concluídas atuais:', completedTasks);
+            
+            // Tenta carregar do localStorage
+            const savedCoins = parseInt(localStorage.getItem('childCoins') || '0', 10);
+            console.log('Coins no localStorage:', savedCoins);
+            
+            // Inicializa com o valor salvo, mas não pode ser maior que o número de tarefas concluídas
+            let newCoins = (!isNaN(savedCoins) && savedCoins <= completedTasks) ? savedCoins : 0;
+            
+            // Sincroniza com o banco de dados se disponível
+            if (supabase) {
+                try {
+                    console.log('Buscando coins no Supabase...');
+                    const { data, error } = await supabase
+                        .from('user_data')
+                        .select('coins')
+                        .eq('id', 1)
+                        .single();
+                    
+                    if (!error && data) {
+                        console.log('Coins encontrados no banco de dados:', data.coins);
+                        
+                        // Garante que o valor dos coins não seja maior que o número de tarefas concluídas
+                        // e não seja menor que zero
+                        newCoins = Math.min(
+                            Math.max(
+                                data.coins || 0,
+                                0
+                            ),
+                            completedTasks
+                        );
+                        
+                        console.log('Valor de coins após validação:', newCoins);
+                        
+                        console.log('Novo valor de coins após sincronização:', newCoins);
+                        
+                        // Se o valor no banco estiver diferente do calculado, atualiza
+                        if (data.coins !== newCoins) {
+                            console.log('Atualizando valor no banco de dados...');
+                            await saveCoins(); // Isso vai salvar o novo valor
+                        }
+                    } else if (error && error.code !== 'PGRST116') { // 116 = nenhum resultado
+                        console.error('Erro ao carregar coins do banco:', error);
+                        // Em caso de erro, mantém o valor atual
+                    } else {
+                        console.log('Nenhum dado de coins encontrado no banco.');
+                        // Se não houver dados no banco, salva o valor atual
+                        await saveCoins();
+                    }
+                } catch (dbError) {
+                    console.error('Erro ao sincronizar com o banco de dados:', dbError);
+                    // Em caso de erro, continua com o valor atual
+                }
+            }
+            
+            // Atualiza o estado local
+            coins = newCoins;
+            
+            // Atualiza a interface do usuário
+            if (coinCountElement) {
+                coinCountElement.textContent = coins;
+            }
+            
+            console.log('Coins carregados com sucesso:', coins);
+        } catch (error) {
+            console.error('Erro ao carregar coins:', error);
+            // Em caso de erro, garante que o contador seja 0
+            coins = 0;
+            if (coinCountElement) {
+                coinCountElement.textContent = '0';
+            }
+        }
+    }
+
     async function toggleTaskStatus(timeString) {
-        if (routine[timeString]) {
-            routine[timeString].done = !routine[timeString].done;
-            await saveRoutine();
+        if (!routine[timeString]) return;
+        
+        try {
+            console.log('Alternando status da tarefa:', timeString);
+            
+            // Alterna o status da tarefa
+            const wasCompleted = routine[timeString].done;
+            routine[timeString].done = !wasCompleted;
+            
+            // Calcula o novo número de moedas
+            const completedTasks = Object.values(routine).filter(task => task.done).length;
+            
+            // Atualiza o contador de coins
+            if (coinCountElement) {
+                coins = completedTasks;
+                coinCountElement.textContent = coins;
+                
+                // Anima o ícone
+                const coinIcon = document.querySelector('.coin-counter i');
+                if (coinIcon) {
+                    coinIcon.classList.add('coin-animation');
+                    setTimeout(() => coinIcon.classList.remove('coin-animation'), 500);
+                }
+            }
+            
+            console.log('Status da tarefa alterado. Tarefas concluídas:', completedTasks, 'Coins:', coins);
+            
+            // Salva a rotina e os coins atualizados
+            await Promise.all([
+                saveRoutine(),
+                saveCoins()
+            ]);
+            
+            console.log('Dados salvos com sucesso.');
+            
+            // Atualiza a visualização
             updateRoutineView();
+            
+        } catch (error) {
+            console.error('Erro ao alternar status da tarefa:', error);
+            alert('Ocorreu um erro ao atualizar a tarefa. Tente novamente.');
+            
+            // Reverte a mudança em caso de erro
+            if (routine[timeString]) {
+                routine[timeString].done = !routine[timeString].done;
+            }
+            
+            // Recarrega os coins para garantir consistência
+            try {
+                await loadCoins();
+            } catch (reloadError) {
+                console.error('Erro ao recarregar os dados:', reloadError);
+            }
         }
     }
 
@@ -489,16 +822,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Carrega a rotina da tabela routines
             const { data: routineData, error: routineError } = await supabase
                 .from('routines')
-                .select('*')
+                .select('routine_data')
                 .eq('id', 1)
                 .single();
+                
             if (routineError && routineError.code !== 'PGRST116') {
                 console.warn('Erro ao carregar rotina do Supabase:', routineError);
-            } else if (routineData) {
-                routine = routineData.routine_data || {};
-                return;
-            } else {
                 routine = {};
+            } else if (routineData && routineData.routine_data) {
+                routine = routineData.routine_data;
+                console.log('Rotina carregada com sucesso:', routine);
+            } else {
+                console.log('Nenhuma rotina encontrada no banco de dados');
+                routine = {};
+                // Se não houver rotina, garante que os coins sejam 0
+                await resetCoins();
             }
         } catch (error) {
             console.error('Erro ao carregar rotina do Supabase:', error);

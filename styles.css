@@ -153,7 +153,42 @@ body {
 /* Header */
 header {
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.coin-counter {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    background: #f8e71c;
+    color: #8b6914;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.coin-counter i {
+    color: #ffd700;
+    font-size: 1.2em;
+    transition: transform 0.3s ease;
+}
+
+.coin-animation {
+    animation: coinPop 0.5s ease-out;
+}
+
+@keyframes coinPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.5) rotate(15deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+header h1 {
     background: linear-gradient(135deg, var(--primary), #4A89DC);
     color: white;
     padding: 15px;
