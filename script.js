@@ -1,4 +1,4 @@
-import { supabase } from './config.js';
+import { supabase } from './supabaseClient.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
     // DOM Elements
@@ -12,50 +12,78 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Estado para controle de rotina salva
     let isRoutineSaved = false;
 
-    // Activity icons mapping
-    const activityIcons = {
-        'Acordar': 'fa-sun',
-        'Tomar Café': 'fa-mug-hot',
-        'Escovar os Dentes': 'fa-tooth',
-        'Se Vestir': 'fa-tshirt',
-        'Brincar': 'fa-puzzle-piece',
-        'Almoçar': 'fa-utensils',
-        'Escola': 'fa-school',
-        'Dever de Casa': 'fa-book-open',
-        'Lanche': 'fa-apple-alt',
-        'Aula de Música': 'fa-music',
-        'Natação': 'fa-swimmer',
-        'Jantar': 'fa-drumstick-bite',
-        'Tomar Banho': 'fa-bath',
-        'Ler História': 'fa-book-reader',
-        'Dormir': 'fa-moon',
-        'Tia Aryele': 'fa-chalkboard-teacher',
-        'Inglês': 'fa-language',
-        'Tomar Vacina': 'fa-syringe',
-        'Mercado': 'fa-shopping-cart',
-        'Shopping': 'fa-shopping-bag',
-        'Dentista': 'fa-tooth',
-        'Material da Escola': 'fa-pencil-ruler',
-        'Jogar Bola': 'fa-futebol',
-    };
-    
-    // Default activities
-    const defaultActivities = Object.keys(activityIcons);
-
     // Application state
     let routine = {};
-    let activities = [...defaultActivities].sort((a, b) => a.localeCompare(b));
+    let activities = [];
+    let activityIcons = {};
     let selectedTimeSlot = null;
 
     // Initialize
     try {
+        await loadActivities();
         await loadRoutine();
         setupEventListeners();
         initializeTimeSlots();
     } catch (error) {
         console.error('Error initializing app:', error);
-        // Fallback to local storage if Supabase fails
-        loadFromLocalStorage();
+        alert('Erro ao inicializar o app.');
+    }
+    // CRUD de atividades
+    async function loadActivities() {
+        const { data, error } = await supabase
+            .from('activities')
+            .select('*');
+        if (error) {
+            console.error('Erro ao carregar atividades:', error);
+            alert('Erro ao carregar atividades.');
+            activities = [];
+            activityIcons = {};
+        } else {
+            activities = [];
+            activityIcons = {};
+            data.forEach(item => {
+                activities.push(item.name);
+                activityIcons[item.name] = item.icon;
+            });
+        }
+    }
+
+    async function addActivity(name, icon) {
+        const { error } = await supabase
+            .from('activities')
+            .insert([{ name, icon, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }]);
+        if (error) {
+            alert('Erro ao adicionar atividade: ' + error.message);
+        } else {
+            await loadActivities();
+            initializeTimeSlots();
+        }
+    }
+
+    async function editActivity(name, newName, newIcon) {
+        const { error } = await supabase
+            .from('activities')
+            .update({ name: newName, icon: newIcon, updated_at: new Date().toISOString() })
+            .eq('name', name);
+        if (error) {
+            alert('Erro ao editar atividade: ' + error.message);
+        } else {
+            await loadActivities();
+            initializeTimeSlots();
+        }
+    }
+
+    async function deleteActivity(name) {
+        const { error } = await supabase
+            .from('activities')
+            .delete()
+            .eq('name', name);
+        if (error) {
+            alert('Erro ao remover atividade: ' + error.message);
+        } else {
+            await loadActivities();
+            initializeTimeSlots();
+        }
     }
 
     // Funções principais
@@ -462,49 +490,38 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function loadRoutine() {
         try {
-            // Tenta carregar do Supabase se disponível
-            if (supabase) {
-                // Carrega as atividades da tabela activities
-                const { data: activitiesData, error: activitiesError } = await supabase
-                    .from('activities')
-                    .select('*');
-
-                if (activitiesError) throw activitiesError;
-
-                // Atualiza a lista de atividades e ícones
-                if (activitiesData && activitiesData.length > 0) {
-                    activities = activitiesData.map(item => item.name);
-                    activitiesData.forEach(item => {
-                        activityIcons[item.name] = item.icon;
-                    });
-                }
-
-                // Carrega a rotina da tabela routines
-                const { data: routineData, error: routineError } = await supabase
-                    .from('routines')
-                    .select('*')
-                    .eq('id', 1)
-                    .single();
-
-                if (routineError && routineError.code !== 'PGRST116') { // PGRST116 é "recurso não encontrado"
-                    console.warn('Erro ao carregar rotina do Supabase:', routineError);
-                } else if (routineData) {
-                    // Dados encontrados no Supabase
-                    routine = routineData.routine_data || {};
-                    
-                    // Atualiza o localStorage como fallback
-                    saveToLocalStorage();
-                    return;
-                }
+            // Carrega as atividades da tabela activities
+            const { data: activitiesData, error: activitiesError } = await supabase
+                .from('activities')
+                .select('*');
+            if (activitiesError) throw activitiesError;
+            activities = [];
+            activityIcons = {};
+            if (activitiesData && activitiesData.length > 0) {
+                activitiesData.forEach(item => {
+                    activities.push(item.name);
+                    activityIcons[item.name] = item.icon;
+                });
             }
-            
-            // Se o Supabase não estiver disponível ou não houver dados, carrega do localStorage
-            loadFromLocalStorage();
-            
+
+            // Carrega a rotina da tabela routines
+            const { data: routineData, error: routineError } = await supabase
+                .from('routines')
+                .select('*')
+                .eq('id', 1)
+                .single();
+            if (routineError && routineError.code !== 'PGRST116') {
+                console.warn('Erro ao carregar rotina do Supabase:', routineError);
+            } else if (routineData) {
+                routine = routineData.routine_data || {};
+                return;
+            } else {
+                routine = {};
+            }
         } catch (error) {
-            console.error('Erro ao carregar rotina, usando fallback para localStorage:', error);
-            // Fallback para localStorage
-            loadFromLocalStorage();
+            console.error('Erro ao carregar rotina do Supabase:', error);
+            alert('Erro ao consultar rotina no banco.');
+            routine = {};
         }
     }
     

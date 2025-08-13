@@ -1,0 +1,11 @@
+{
+  "name": "rotinaDiaria",
+  "version": "1.0.0",
+  "description": "Projeto rotina diária",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx live-server --open=index.html"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
