@@ -24,7 +24,15 @@ Facilitar a organização da rotina infantil através de uma interface colorida 
 
 - Navegador web moderno (Chrome, Firefox, Safari, Edge)
 - Conta no [Supabase](https://supabase.com/)
-- Node.js (opcional, para servidor local)
+- Node.js: https://nodejs.org/pt (opcional, para servidor local)
+- Baixe o VS Code: https://code.visualstudio.com/download (editor opcional)
+- Baixe o git: https://git-scm.com/downloads
+
+### Características técnicas do projeto
+
+- Arquitetura cliente-servidor
+- Frontend baseado em React com Vite
+- Backend em NestJS
 
 ### Configuração do Banco de Dados (Supabase)
 
@@ -90,6 +98,10 @@ rotina-diaria/
 ├── styles.css          # Estilos da aplicação
 ├── supabaseClient.js   # Configuração do cliente Supabase
 ├── testSupabase.js     # Teste de conexão com Supabase
+├── frontend/           # Pasta principal do frontend desenvolvido com REACT
+├   └──                 
+├── backend/            # Pasta principal do backend desenvolvido com NestJS
+├   └──                 
 └── README.md           # Documentação do projeto
 ```
 
@@ -101,12 +113,46 @@ rotina-diaria/
    cd rotina-diaria
    ```
 
-2. **Configure o Supabase**
+2. **Instale as dependências**
+   - Abra um novo terminal e navegue até a pasta /frontend conforme o comando de exemplo:
+   ```
+   cd .\frontend\
+   ```
+
+   - Instale todas as dependências do React JS com o comando:
+   ```
+   npm i
+   ```
+
+   - retorne na pasta raiz do projeto e navegue até a pasta /backend:
+   ```
+   cd .. .\backend\
+   ```
+
+   - Instale todas as dependências do NestJS com o comando:
+   ```
+   npm i
+   ```
+
+3. **Configure o Supabase**
    - Crie um novo projeto em [Supabase](https://supabase.com/)
    - Execute os scripts SQL fornecidos na seção de configuração do banco de dados
    - Copie as credenciais do projeto (URL e chave pública) para o arquivo `supabaseClient.js`
 
-3. **Execute localmente**
+4. **Execute localmente**
+   - Pelo terminal navegue até a pasta backend
+   - Inicialize o servidor da api local:
+      ```
+      npm run start:dev
+      ```
+   - A api deve estar rodando e a mensagem de sucesso é exibida no navegador ao acessar http://localhost:3000/
+   - Abra um novo terminal
+   - Navegue até a pasta frontend
+   - Inicialize o servidor frontend local:
+      ```
+      npm run dev
+      ```
+
    - Método 1: Abra o arquivo `index.html` diretamente no navegador
    - Método 2: Use um servidor local:
      ```bash
