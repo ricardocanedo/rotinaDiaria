@@ -3,190 +3,168 @@
 [![Status do Projeto](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)](https://github.com/seu-usuario/rotina-diaria)
 [![Licença](https://img.shields.io/badge/licença-MIT-blue)](LICENSE)
 
-Aplicação web interativa desenvolvida para ajudar crianças a organizarem suas rotinas diárias de forma lúdica e educativa. Projetada especialmente para a Clarinha, esta ferramenta transforma tarefas cotidianas em uma experiência divertida e engajadora.
+Aplicação web para ajudar crianças a organizarem suas rotinas diárias de forma lúdica e educativa. Foi pensada para a Clarinha e transforma tarefas cotidianas em uma experiência divertida com feedback visual e “coins” por tarefas concluídas.
 
 ## 🎯 Objetivo
 
-Facilitar a organização da rotina infantil através de uma interface colorida e interativa, onde as crianças podem visualizar suas atividades diárias e marcar as tarefas concluídas.
+Facilitar a organização da rotina infantil com uma interface simples, colorida e acessível, onde é possível definir horários, escolher atividades e acompanhar o progresso ao longo do dia.
 
 ## ✨ Funcionalidades
 
-- 📝 Criação de rotinas personalizadas por horário
-- 🎨 Gerenciamento de atividades (adicionar, editar, remover)
-- ✅ Marcação de tarefas como concluídas
-- ☁️ Persistência de dados no Supabase
-- 📱 Interface responsiva e amigável para crianças
-- 🎵 Atividades com ícones visuais intuitivos
+- 📝 Criação de rotina por intervalos de 30 minutos (06:00–21:30)
+- 🎨 Catálogo de atividades com ícones (adicionar, editar, remover)
+- ✅ Marcação de tarefas como concluídas com contagem de “coins”
+- 💾 Persistência local via SQLite (atividades, rotina e coins)
+- 💾 Fallback local via LocalStorage
+- 📱 Layout responsivo e amigável para crianças
 
-## 🚀 Começando
+## 🧰 Tecnologias
 
-### Pré-requisitos
+- Frontend estático: `index.html`, `styles.css`, `script.js`
+- Ícones: `Font Awesome`
+- Banco de dados: `SQLite`
+- App React (opcional) em `frontend/` com Vite
+- Backend (opcional) em `backend/` com NestJS (estrutura base)
 
-- Navegador web moderno (Chrome, Firefox, Safari, Edge)
-- Conta no [Supabase](https://supabase.com/)
-- Node.js: https://nodejs.org/pt (opcional, para servidor local)
-- Baixe o VS Code: https://code.visualstudio.com/download (editor opcional)
-- Baixe o git: https://git-scm.com/downloads
+> Observação: a versão funcional principal é a estática (HTML/CSS/JS) na raiz do projeto. O app React e o backend NestJS estão disponíveis como exploração/expansão futura e não são obrigatórios para uso.
 
-### Características técnicas do projeto
+## 🏦 Banco de Dados (SQLite)
 
-- Arquitetura cliente-servidor
-- Frontend baseado em React com Vite
-- Backend em NestJS
+O projeto passa a utilizar SQLite para persistência local. Recomendamos criar um arquivo `data/app.db` para o banco.
 
-### Configuração do Banco de Dados (Supabase)
+### 1) Criar o banco e tabelas
 
-Execute os seguintes scripts SQL no Supabase para criar as tabelas necessárias:
+Crie a pasta `data/` (se ainda não existir) e, com o `sqlite3` instalado, execute:
 
-### 1. Tabela de Atividades
+```bash
+sqlite3 data/app.db < schema.sql
+```
+
+Conteúdo sugerido para `schema.sql`:
+
 ```sql
--- Tabela para armazenar as atividades disponíveis
-CREATE TABLE activities (
-    name VARCHAR(255) NOT NULL UNIQUE,
-    icon VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Tabela de atividades disponíveis
+CREATE TABLE IF NOT EXISTS activities (
+  name TEXT PRIMARY KEY,
+  icon TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
 );
 
--- Inserir algumas atividades padrão
-INSERT INTO activities (name, icon) VALUES
-    ('Acordar', 'fa-sun'),
-    ('Almoçar', 'fa-utensils'),
-    ('Aula de Música', 'fa-music'),
-    ('Brincar', 'fa-puzzle-piece'),
-    ('Dentista', 'fa-tooth'),
-    ('Dever de Casa', 'fa-book-open'),
-    ('Dormir', 'fa-moon'),
-    ('Escola', 'fa-school');
-```
-
-### 2. Tabela de Rotinas
-```sql
--- Tabela para armazenar as rotinas criadas
-CREATE TABLE routines (
-    id INTEGER PRIMARY KEY,
-    routine_data JSONB NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Tabela de rotinas (uma rotina principal com id fixo = 1)
+CREATE TABLE IF NOT EXISTS routines (
+  id INTEGER PRIMARY KEY,
+  routine_data TEXT NOT NULL, -- JSON serializado
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
 );
 
--- Índice para melhorar performance na busca por routine_data
-CREATE INDEX idx_routines_routine_data ON routines USING GIN (routine_data);
+-- Tabela para contagem de moedas (coins)
+CREATE TABLE IF NOT EXISTS user_data (
+  id INTEGER PRIMARY KEY,
+  coins INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Registro padrão
+INSERT OR IGNORE INTO user_data (id, coins) VALUES (1, 0);
+
+-- Atividades de exemplo (opcional)
+INSERT OR IGNORE INTO activities (name, icon) VALUES
+  ('Acordar', 'fa-sun'),
+  ('Almoçar', 'fa-utensils'),
+  ('Aula de Música', 'fa-music'),
+  ('Brincar', 'fa-puzzle-piece'),
+  ('Dentista', 'fa-tooth'),
+  ('Dever de Casa', 'fa-book-open'),
+  ('Dormir', 'fa-moon'),
+  ('Escola', 'fa-school');
 ```
 
-### 3. Políticas de Segurança (RLS)
-```sql
--- Habilitar Row Level Security
-ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
-ALTER TABLE routines ENABLE ROW LEVEL SECURITY;
+> Observação: o frontend estático pode continuar funcionando apenas com LocalStorage. Para persistência real em SQLite, utilize o backend (NestJS) para expor endpoints que acessem o arquivo `data/app.db`.
 
--- Permitir acesso público para leitura e escrita (para demonstração)
--- Em produção, configure políticas mais restritivas
-CREATE POLICY "Permitir acesso público às atividades" ON activities
-    FOR ALL USING (true);
+## ⚙️ Persistência de Dados
 
-CREATE POLICY "Permitir acesso público às rotinas" ON routines
-    FOR ALL USING (true);
-```
+- Sem backend: os dados ficam no `LocalStorage` do navegador (modo demo/offline).
+- Com backend (NestJS): os dados persistem no `SQLite` (`data/app.db`).
 
 ## 🏗️ Estrutura do Projeto
 
 ```
-rotina-diaria/
-├── index.html          # Página principal da aplicação
-├── script.js           # Lógica JavaScript principal
-├── styles.css          # Estilos da aplicação
-├── supabaseClient.js   # Configuração do cliente Supabase
-├── testSupabase.js     # Teste de conexão com Supabase
-├── frontend/           # Pasta principal do frontend desenvolvido com REACT
-├   └──                 
-├── backend/            # Pasta principal do backend desenvolvido com NestJS
-├   └──                 
-└── README.md           # Documentação do projeto
+rotinaDiaria-main/
+├── index.html
+├── script.js
+├── styles.css
+├── supabaseClient.js        # (legado) não utilizado com SQLite
+├── check-activities.html
+├── config.js                # (legado) não utilizado com SQLite
+├── package.json
+├── frontend/                # App React (opcional)
+│   ├── package.json
+│   ├── src/
+│   └── vite.config.js
+└── backend/                 # NestJS (opcional)
+    ├── package.json
+    ├── src/
+    └── tsconfig.json
 ```
 
-## 🛠️ Instalação e Configuração
+## 🚀 Como Executar
 
-1. **Clone o repositório**
+### Opção A — Versão Estática (recomendada)
+
+1. Instale o Node.js (se ainda não tiver).
+2. Na raiz do projeto, execute:
    ```bash
-   git clone https://github.com/seu-usuario/rotina-diaria.git
-   cd rotina-diaria
+   npm run start
    ```
+   Isso abrirá o `index.html` com um servidor local (via `live-server`).
 
-2. **Instale as dependências**
-   - Abra um novo terminal e navegue até a pasta /frontend conforme o comando de exemplo:
+Alternativas:
+- Abrir o arquivo `index.html` diretamente no navegador; ou
+- Rodar um servidor estático: `npx http-server` e acessar http://localhost:8080
+
+### Opção B — App React (frontend/)
+
+1. Acesse a pasta do app React:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
    ```
-   cd .\frontend\
+2. Acesse a URL indicada pelo Vite (geralmente http://localhost:5173).
+
+> Observação: o app React é um experimento e pode não refletir todas as funcionalidades da versão estática.
+
+### Opção C — Backend NestJS (backend/)
+
+1. Acesse a pasta do backend:
+   ```bash
+   cd backend
+   npm install
+   npm run start:dev
    ```
+2. O servidor básico subirá em http://localhost:3000.
+3. Configure o backend para usar o arquivo `data/app.db` (ex.: via ORM/biblioteca de SQLite). Caso precise, posso adicionar a configuração no NestJS usando `better-sqlite3`, `TypeORM` ou `Prisma`.
 
-   - Instale todas as dependências do React JS com o comando:
-   ```
-   npm i
-   ```
+> Observação: o frontend estático não depende do backend NestJS. O backend é uma base para incluir APIs futuras.
 
-   - retorne na pasta raiz do projeto e navegue até a pasta /backend:
-   ```
-   cd .. .\backend\
-   ```
+## 📱 Como Usar (versão estática)
 
-   - Instale todas as dependências do NestJS com o comando:
-   ```
-   npm i
-   ```
+- Abra a aba "Criar Rotina" para montar a agenda do dia a cada 30 minutos.
+- Selecione atividades do catálogo. Você pode cadastrar novas, editar ou remover.
+- Na aba "Visualizar Rotina", marque as tarefas concluídas e acompanhe seus “coins”.
+- Sem backend: dados apenas no LocalStorage.
+- Com backend: persistência no SQLite (coins, atividades e rotina).
 
-3. **Configure o Supabase**
-   - Crie um novo projeto em [Supabase](https://supabase.com/)
-   - Execute os scripts SQL fornecidos na seção de configuração do banco de dados
-   - Copie as credenciais do projeto (URL e chave pública) para o arquivo `supabaseClient.js`
+## 🤝 Contribuição
 
-4. **Execute localmente**
-   - Pelo terminal navegue até a pasta backend
-   - Inicialize o servidor da api local:
-      ```
-      npm run start:dev
-      ```
-   - A api deve estar rodando e a mensagem de sucesso é exibida no navegador ao acessar http://localhost:3000/
-   - Abra um novo terminal
-   - Navegue até a pasta frontend
-   - Inicialize o servidor frontend local:
-      ```
-      npm run dev
-      ```
-
-   - Método 1: Abra o arquivo `index.html` diretamente no navegador
-   - Método 2: Use um servidor local:
-     ```bash
-     npx http-server
-     ```
-     E acesse: http://localhost:8080
-
-## 📱 Como Usar
-
-1. **Adicionar Atividades**
-   - Clique no botão "+" para adicionar uma nova atividade
-   - Preencha o nome e selecione um ícone
-   - Defina o horário da atividade
-
-2. **Gerenciar Rotina**
-   - Arraste e solte as atividades para reorganizá-las
-   - Clique no ícone de lixeira para remover uma atividade
-   - Marque as atividades como concluídas clicando nelas
-
-3. **Personalização**
-   - Adicione suas próprias atividades personalizadas
-   - Ajuste os horários conforme necessário
-   - A interface se adapta automaticamente ao tamanho da tela
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Siga estes passos:
-
-1. Faça um Fork do projeto
-2. Crie uma Branch para sua Feature (`git checkout -b feature/AmazingFeature`)
-3. Adicione suas mudanças (`git add .`)
-4. Comite suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-5. Faça o Push da Branch (`git push origin feature/AmazingFeature`)
-6. Abra um Pull Request
+1. Faça um fork do repositório
+2. Crie uma branch: `git checkout -b feature/sua-feature`
+3. Commit: `git commit -m "feat: sua feature"`
+4. Push: `git push origin feature/sua-feature`
+5. Abra um Pull Request
 
 ## 📄 Licença
 
@@ -194,7 +172,22 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 🙏 Agradecimentos
 
-- Ícones por [Font Awesome](https://fontawesome.com/)
-- Hospedagem por [Supabase](https://supabase.com/)
-- Inspiração: Clarinha e todas as crianças que merecem uma rotina mais divertida!
-- Criação: Piterson Murilo Boscolo
+- Inspiração: A todas as crianças que merecem uma rotina mais divertida!
+- Criação: 
+  
+  ALISSON THALES FABRO
+  CINTIA MARA VIEIRA FRANCO
+  CLAUDIO EDUARDO CESARIO DE OLIVEIRA
+  JAQUELINE MICAELE MARIA SILVA
+  LUIZ FERNANDO DA SILVA PINTO
+  PITERSON MURILO BOSCOLO
+  RICARDO HENRIQUE CANEDO
+  TAIS ALVES SILVA RIBEIRO
+  
+  
+  
+  
+  
+  
+  
+  
