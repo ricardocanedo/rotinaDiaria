@@ -92,7 +92,7 @@ INSERT OR IGNORE INTO activities (name, icon) VALUES
 ## 🏗️ Estrutura do Projeto
 
 ```
-rotinaDiaria-main/
+rotinaDiaria/
 ├── index.html
 ├── script.js
 ├── styles.css
@@ -125,7 +125,9 @@ Alternativas:
 - Abrir o arquivo `index.html` diretamente no navegador; ou
 - Rodar um servidor estático: `npx http-server` e acessar http://localhost:8080
 
-### Opção B — App React (frontend/)
+### Opção B:
+
+#### App React (frontend/)
 
 1. Acesse a pasta do app React:
    ```bash
@@ -137,16 +139,23 @@ Alternativas:
 
 > Observação: o app React é um experimento e pode não refletir todas as funcionalidades da versão estática.
 
-### Opção C — Backend NestJS (backend/)
+#### Backend NestJS (backend/)
 
 1. Acesse a pasta do backend:
    ```bash
    cd backend
    npm install
-   npm run start:dev
    ```
-2. O servidor básico subirá em http://localhost:3000.
-3. Configure o backend para usar o arquivo `data/app.db` (ex.: via ORM/biblioteca de SQLite). Caso precise, posso adicionar a configuração no NestJS usando `better-sqlite3`, `TypeORM` ou `Prisma`.
+
+2. Inicialize as migrations do Prisma:
+   ```bash
+    npx prisma migrate dev --name init
+   ```
+3. Inicie o servidor NestJS:
+   ```bash
+    npm run start:dev
+    ```
+ - O servidor básico subirá em http://localhost:3000.
 
 > Observação: o frontend estático não depende do backend NestJS. O backend é uma base para incluir APIs futuras.
 
