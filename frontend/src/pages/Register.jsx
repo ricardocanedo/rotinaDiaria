@@ -1,20 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthService } from '../services/auth.service';
 
-function Login() {
+function Register() {
     const navigate = useNavigate();
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
+        name: '',
         email: '',
         password: ''
     });
-
-    useEffect(() => {
-        // Limpa o cache ao entrar na página de login
-        AuthService.logout();
-    }, []);
 
     const handleChange = (e) => {
         setFormData({
@@ -29,10 +25,10 @@ function Login() {
         setError('');
 
         try {
-            await AuthService.login(formData);
+            await AuthService.register(formData);
             navigate('/');
         } catch (err) {
-            setError('Email ou senha inválidos');
+            setError('Erro ao criar conta. Tente novamente.');
         } finally {
             setIsLoading(false);
         }
@@ -41,10 +37,22 @@ function Login() {
     return (
         <div className="d-flex justify-content-center align-items-center min-vh-100">
             <div className="bg-white rounded shadow p-5">
-                <h1 className="text-center mb-4">Login</h1>
+                <h1 className="text-center mb-4">Criar Conta</h1>
                 {error && <div className="alert alert-danger">{error}</div>}
                 
                 <form onSubmit={handleSubmit}>
+                    <div className="mb-3">
+                        <label className="form-label">Nome</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
+
                     <div className="mb-3">
                         <label className="form-label">Email</label>
                         <input
@@ -74,11 +82,11 @@ function Login() {
                         className="btn btn-primary w-100"
                         disabled={isLoading}
                     >
-                        {isLoading ? 'Carregando...' : 'Entrar'}
+                        {isLoading ? 'Criando...' : 'Criar Conta'}
                     </button>
 
                     <div className="text-center mt-3">
-                        <Link to="/register">Não tem uma conta? Cadastre-se</Link>
+                        <Link to="/login">Já tem uma conta? Faça login</Link>
                     </div>
                 </form>
             </div>
@@ -86,4 +94,4 @@ function Login() {
     );
 }
 
-export default Login;
+export default Register;

@@ -5,10 +5,14 @@ import { SwaggerService } from './swagger/swagger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Habilitar CORS
+  app.enableCors();
+  
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true
-      
+      whitelist: true,
+      transform: true
     }),
   );
 
@@ -16,11 +20,10 @@ async function bootstrap() {
   const swaggerService = new SwaggerService();
   swaggerService.setup(app);
 
-  // Use 0 to let the system assign an available port
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 0;
+  // Use porta fixa 3000
+  const port = process.env.PORT || 3000;
   await app.listen(port);
-  const assignedPort = app.getHttpServer().address().port;
-  console.log(`Application is running on: http://localhost:${assignedPort}`);
-  console.log(`Swagger documentation is available on: http://localhost:${assignedPort}/api/docs`);
+  console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Swagger documentation is available on: http://localhost:${port}/api/docs`);
 }
 bootstrap();

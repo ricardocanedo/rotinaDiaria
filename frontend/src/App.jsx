@@ -5,6 +5,7 @@ import Navbar from './components/layout/Navbar/Navbar.jsx'
 import Home from './pages/Home.jsx'
 import Sobre from './pages/Sobre.jsx'
 import Login from './pages/Login.jsx'
+import Register from './pages/Register.jsx'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
           </Routes>
         </div>
       </Router>
