@@ -54,6 +54,7 @@ coverage/
 # Ignore local database or test files
 *.sqlite
 *.local
+*.db
 
 # Misc
 *.bak
