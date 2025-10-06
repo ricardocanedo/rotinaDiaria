@@ -3,30 +3,30 @@
 [![Status do Projeto](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)](https://github.com/seu-usuario/rotina-diaria)
 [![Licença](https://img.shields.io/badge/licença-MIT-blue)](LICENSE)
 
-Aplicação web para ajudar crianças a organizarem suas rotinas diárias de forma lúdica e educativa. Foi pensada para a Clarinha e transforma tarefas cotidianas em uma experiência divertida com feedback visual e “coins” por tarefas concluídas.
+Aplicação web para ajudar principalmente crianças a organizarem suas rotinas diárias de forma lúdica e educativa. Foi pensada para a Clarinha e transforma tarefas cotidianas em uma experiência divertida com feedback visual e “coins” por tarefas concluídas.
 
 ## 🎯 Objetivo
 
-Facilitar a organização da rotina infantil com uma interface simples, colorida e acessível, onde é possível definir horários, escolher atividades e acompanhar o progresso ao longo do dia.
+Facilitar a organização da rotina com uma interface simples, colorida e acessível, onde é possível definir horários, escolher atividades e acompanhar o progresso ao longo do dia.
 
 ## ✨ Funcionalidades
 
-- 📝 Criação de rotina por intervalos de 30 minutos (06:00–21:30)
+- 📝 Criação de rotina por intervalos
 - 🎨 Catálogo de atividades com ícones (adicionar, editar, remover)
 - ✅ Marcação de tarefas como concluídas com contagem de “coins”
 - 💾 Persistência local via SQLite (atividades, rotina e coins)
 - 💾 Fallback local via LocalStorage
-- 📱 Layout responsivo e amigável para crianças
+- 📱 Layout responsivo e amigável
 
 ## 🧰 Tecnologias
 
-- Frontend estático: `index.html`, `styles.css`, `script.js`
-- Ícones: `Font Awesome`
-- Banco de dados: `SQLite`
-- App React (opcional) em `frontend/` com Vite
-- Backend (opcional) em `backend/` com NestJS (estrutura base)
+- Frontend estático: `index.html`, `styles.css`, `script.js` (legado)
+- Ícones: `Font Awesome` 
+- Banco de dados: `SQLite` 
+- App React em `frontend/` com Vite
+- Backend em `backend/` com NestJS (estrutura base)
 
-> Observação: a versão funcional principal é a estática (HTML/CSS/JS) na raiz do projeto. O app React e o backend NestJS estão disponíveis como exploração/expansão futura e não são obrigatórios para uso.
+> Observação: a versão funcional principal é a estática (HTML/CSS/JS) na raiz do projeto. O app React e o backend NestJS estão disponíveis como exploração/expansão em desenvolvimento e não são obrigatórios para uso.
 
 ## 🏦 Banco de Dados (SQLite)
 
