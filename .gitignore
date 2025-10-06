@@ -58,3 +58,6 @@ coverage/
 # Misc
 *.bak
 *.orig
+
+# Prisma generated client
+/backend/generated/prisma/
