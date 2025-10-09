@@ -71,16 +71,6 @@ rotinaDiaria/
     npx prisma migrate dev --name init
    ```
 
-3. Gerar o cliente Prisma baseado no schema:
-   ```bash
-   npx prisma generate
-   ```
-
-4. Criar/atualizar o banco de dados:
-   ```bash
-   npx prisma db push
-   ```
-
 5. Inicie o servidor NestJS:
    ```bash
     npm run start:dev
