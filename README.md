@@ -14,80 +14,14 @@ Facilitar a organização da rotina com uma interface simples, colorida e acess�
 - 📝 Criação de rotina por intervalos
 - 🎨 Catálogo de atividades com ícones (adicionar, editar, remover)
 - ✅ Marcação de tarefas como concluídas com contagem de “coins”
-- 💾 Persistência local via SQLite (atividades, rotina e coins)
-- 💾 Fallback local via LocalStorage
 - 📱 Layout responsivo e amigável
 
 ## 🧰 Tecnologias
 
-- Frontend estático: `index.html`, `styles.css`, `script.js` (legado)
 - Ícones: `Font Awesome` 
 - Banco de dados: `SQLite` 
 - App React em `frontend/` com Vite
 - Backend em `backend/` com NestJS (estrutura base)
-
-> Observação: a versão funcional principal é a estática (HTML/CSS/JS) na raiz do projeto. O app React e o backend NestJS estão disponíveis como exploração/expansão em desenvolvimento e não são obrigatórios para uso.
-
-## 🏦 Banco de Dados (SQLite)
-
-O projeto passa a utilizar SQLite para persistência local. Recomendamos criar um arquivo `data/app.db` para o banco.
-
-### 1) Criar o banco e tabelas
-
-Crie a pasta `data/` (se ainda não existir) e, com o `sqlite3` instalado, execute:
-
-```bash
-sqlite3 data/app.db < schema.sql
-```
-
-Conteúdo sugerido para `schema.sql`:
-
-```sql
--- Tabela de atividades disponíveis
-CREATE TABLE IF NOT EXISTS activities (
-  name TEXT PRIMARY KEY,
-  icon TEXT NOT NULL,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
-
--- Tabela de rotinas (uma rotina principal com id fixo = 1)
-CREATE TABLE IF NOT EXISTS routines (
-  id INTEGER PRIMARY KEY,
-  routine_data TEXT NOT NULL, -- JSON serializado
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
-
--- Tabela para contagem de moedas (coins)
-CREATE TABLE IF NOT EXISTS user_data (
-  id INTEGER PRIMARY KEY,
-  coins INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
-
--- Registro padrão
-INSERT OR IGNORE INTO user_data (id, coins) VALUES (1, 0);
-
--- Atividades de exemplo (opcional)
-INSERT OR IGNORE INTO activities (name, icon) VALUES
-  ('Acordar', 'fa-sun'),
-  ('Almoçar', 'fa-utensils'),
-  ('Aula de Música', 'fa-music'),
-  ('Brincar', 'fa-puzzle-piece'),
-  ('Dentista', 'fa-tooth'),
-  ('Dever de Casa', 'fa-book-open'),
-  ('Dormir', 'fa-moon'),
-  ('Escola', 'fa-school');
-```
-
-> Observação: o frontend estático pode continuar funcionando apenas com LocalStorage. Para persistência real em SQLite, utilize o backend (NestJS) para expor endpoints que acessem o arquivo `data/app.db`.
-
-## ⚙️ Persistência de Dados
-
-- Sem backend: os dados ficam no `LocalStorage` do navegador (modo demo/offline).
-- Com backend (NestJS): os dados persistem no `SQLite` (`data/app.db`).
 
 ## 🏗️ Estrutura do Projeto
 
@@ -111,21 +45,6 @@ rotinaDiaria/
 ```
 
 ## 🚀 Como Executar
-
-### Opção A — Versão Estática (recomendada)
-
-1. Instale o Node.js (se ainda não tiver).
-2. Na raiz do projeto, execute:
-   ```bash
-   npm run start
-   ```
-   Isso abrirá o `index.html` com um servidor local (via `live-server`).
-
-Alternativas:
-- Abrir o arquivo `index.html` diretamente no navegador; ou
-- Rodar um servidor estático: `npx http-server` e acessar http://localhost:8080
-
-### Opção B:
 
 #### App React (frontend/)
 
@@ -151,13 +70,12 @@ Alternativas:
    ```bash
     npx prisma migrate dev --name init
    ```
-3. Inicie o servidor NestJS:
+
+5. Inicie o servidor NestJS:
    ```bash
     npm run start:dev
     ```
  - O servidor básico subirá em http://localhost:3000.
-
-> Observação: o frontend estático não depende do backend NestJS. O backend é uma base para incluir APIs futuras.
 
 ## 📱 Como Usar (versão estática)
 
