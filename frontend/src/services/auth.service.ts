@@ -1,51 +1,65 @@
 import { AuthResponse, LoginCredentials } from '../interfaces/auth.interface';
+import { ToastService } from './toast.service';
 
 const API_URL = 'http://localhost:3000';
 
 export const AuthService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     if (!credentials.email || !credentials.password) {
+      ToastService.error('Email e senha são obrigatórios');
       throw new Error('Email e senha são obrigatórios');
     }
 
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: credentials.email,
-        password: credentials.password
-      }),
-    });
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error('Login failed');
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      ToastService.success('Login realizado com sucesso!');
+      return data;
+    } catch (error) {
+      ToastService.error(error.error.message ?? 'Erro ao fazer login.');
+      throw error;
     }
-
-    const data = await response.json();
-    localStorage.setItem('token', data.access_token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    return data;
   },
 
   async register(userData: { email: string; password: string; name: string }): Promise<AuthResponse> {
-    const response = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
 
-    if (!response.ok) {
-      throw new Error('Registration failed');
+      if (!response.ok) {
+        throw new Error('Registration failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      ToastService.success('Conta criada com sucesso!');
+      return data;
+    } catch (error) {
+      ToastService.error('Erro ao criar conta. Tente novamente.');
+      throw error;
     }
-
-    const data = await response.json();
-    localStorage.setItem('token', data.access_token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    return data;
   },
 
   logout() {
