@@ -47,17 +47,18 @@ export const AuthService = {
         body: JSON.stringify(userData),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Registration failed');
+        throw data;
       }
 
-      const data = await response.json();
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('user', JSON.stringify(data.user));
       ToastService.success('Conta criada com sucesso!');
       return data;
     } catch (error) {
-      ToastService.error('Erro ao criar conta. Tente novamente.');
+      ToastService.errorApi(error);
       throw error;
     }
   },
