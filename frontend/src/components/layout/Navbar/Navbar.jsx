@@ -29,7 +29,7 @@ function Navbar() {
                     <ul className="navbar-nav ms-auto">
                         <li className="nav-item">
                             <Link className="nav-link" to="/atividades">
-                                <span className="btn btn-primary">Gerenciar Atividades</span>
+                                <span className="btn btn-primary">Gerenciar</span>
                             </Link>
                         </li>
                         <li className="nav-item">
