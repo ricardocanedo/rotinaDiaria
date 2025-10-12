@@ -32,7 +32,7 @@ function Login() {
             await AuthService.login(formData);
             navigate('/');
         } catch (err) {
-            setError('Email ou senha inválidos');
+            console.error('Erro ao fazer login:', err);
         } finally {
             setIsLoading(false);
         }

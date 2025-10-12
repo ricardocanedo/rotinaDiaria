@@ -28,7 +28,7 @@ function Register() {
             await AuthService.register(formData);
             navigate('/');
         } catch (err) {
-            setError('Erro ao criar conta. Tente novamente.');
+            console.error('Erro ao registrar:', err);
         } finally {
             setIsLoading(false);
         }

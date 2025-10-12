@@ -21,24 +21,17 @@ Facilitar a organização da rotina com uma interface simples, colorida e acess�
 - Ícones: `Font Awesome` 
 - Banco de dados: `SQLite` 
 - App React em `frontend/` com Vite
-- Backend em `backend/` com NestJS (estrutura base)
+- Backend em `backend/` com NestJS
 
 ## 🏗️ Estrutura do Projeto
 
 ```
 rotinaDiaria/
-├── index.html
-├── script.js
-├── styles.css
-├── supabaseClient.js        # (legado) não utilizado com SQLite
-├── check-activities.html
-├── config.js                # (legado) não utilizado com SQLite
-├── package.json
-├── frontend/                # App React (opcional)
+├── frontend/                # App React
 │   ├── package.json
 │   ├── src/
 │   └── vite.config.js
-└── backend/                 # NestJS (opcional)
+└── backend/                 # NestJS
     ├── package.json
     ├── src/
     └── tsconfig.json
@@ -66,12 +59,15 @@ rotinaDiaria/
    npm install
    ```
 
-2. Inicialize as migrations do Prisma:
+2. Crie um arquivo .env com o conteúdo:
+   DATABASE_URL="file:./dev.db"
+
+3. Inicialize as migrations do Prisma:
    ```bash
     npx prisma migrate dev --name init
    ```
 
-5. Inicie o servidor NestJS:
+4. Inicie o servidor NestJS:
    ```bash
     npm run start:dev
     ```
