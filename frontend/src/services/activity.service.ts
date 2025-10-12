@@ -42,5 +42,32 @@ export const ActivityService = {
 
     getUserActivity(id: number): UserActivity | null {
         return this.getUserActivities().find(a => a.id === id) || null;
-    }
+    },
+
+    getCurrentActivities(): UserActivity[] {
+        const now = new Date();
+        const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
+                          now.getMinutes().toString().padStart(2, '0');
+        
+        return this.getUserActivities()
+            .filter(activity => {
+                console.log('activity', activity, now, currentTime);
+                
+                if (!activity.isActive) return false;
+                
+                // Se for atividade diária, compara apenas o horário
+                if (activity.repeat === 'daily') {
+                    return activity.time <= currentTime;
+                }
+                
+                // // Se for semanal, verifica também o dia da semana
+                // if (activity.repeat === 'weekly') {
+                //     const today = now.getDay();
+                //     return activity.time <= currentTime;
+                // }
+                
+                // none, só considera o horario
+                return activity.time <= currentTime;
+            });
+    },
 };
