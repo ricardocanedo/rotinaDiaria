@@ -16,23 +16,21 @@ export const AuthService = {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: credentials.email,
-          password: credentials.password
-        }),
+        body: JSON.stringify(credentials),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Login failed');
+        throw data;
       }
 
-      const data = await response.json();
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('user', JSON.stringify(data.user));
       ToastService.success('Login realizado com sucesso!');
       return data;
     } catch (error) {
-      ToastService.error(error.error.message ?? 'Erro ao fazer login.');
+      ToastService.errorApi(error);
       throw error;
     }
   },
