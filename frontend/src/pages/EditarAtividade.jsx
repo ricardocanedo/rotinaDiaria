@@ -13,6 +13,7 @@ function EditarAtividade() {
         color: '',
         category: '',
         description: '',
+        imageSrc: '',
         time: '00:00',
         isActive: true,
         repeat: 'none'
@@ -79,10 +80,15 @@ function EditarAtividade() {
                             </select>
                         </div>
 
+                        {(activity.imageSrc && activity.imageSrc != '') && (
+                            <div className="text-center mb-3">
+                                <img src={'/img/atividades/' + activity.imageSrc}></img>
+                            </div>
+                        )}
+
                         {activity.description && (
-                            <div className="mb-3">
-                                <label className="form-label">Descrição</label>
-                                <p>{activity.description}</p>
+                            <div className="text-center mt-3 mb-2">
+                                {activity.description}
                             </div>
                         )}
 
