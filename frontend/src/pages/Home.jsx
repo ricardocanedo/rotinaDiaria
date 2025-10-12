@@ -40,9 +40,15 @@ function Home() {
                                     <span className="fs-1 me-2">{activity.icon}</span>
                                     <h5 className="card-title mb-0">{activity.name}</h5>
                                 </div>
-                                <p className="card-text">{activity.description}</p>
+                                {(activity.imageSrc && activity.imageSrc != '') && (
+                                    <div className="text-center mb-3">
+                                        <img src={'/img/atividades/' + activity.imageSrc}></img>
+                                    </div>
+                                )}
+                                <p className="card-text text-center">{activity.description}</p>
                                 <p className="card-text">
-                                    <small>Horário: {activity.time}</small>
+                                    <span>Horário: </span>
+                                    <span className='fw-bold'>{activity.time}</span>
                                 </p>
                                 { CompletionService.isCompletedToday(activity.id) ?(
                                     <button 
