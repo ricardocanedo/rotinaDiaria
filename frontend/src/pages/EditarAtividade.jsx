@@ -113,9 +113,9 @@ function EditarAtividade() {
                                 value={activity.repeat}
                                 onChange={(e) => setActivity({...activity, repeat: e.target.value})}
                             >
-                                <option value="none">Não repete</option>
-                                <option value="daily">daily</option>
-                                <option value="weekly">weekly</option>
+                                <option value="none">Não Repete</option>
+                                <option value="daily">Diariamente</option>
+                                <option value="weekly">Semanalmente</option>
                             </select>
                         </div>
 

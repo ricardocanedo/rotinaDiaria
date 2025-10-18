@@ -9,7 +9,7 @@
 - botão para cadastrar nova atidade quando não houver cadastro, ou sugestão de fazer o login (pg: home)
 - tela de sobre
 - rever as imagens das atividades para ter todas as atividades disponíveis com suas respectivas imagens
-- ajustar textos dos selects de Repetição para português
+~~- ajustar textos dos selects de Repetição para português~~
 ~~- ordenar as atividades por horário na Rotina Diária~~
 
 bug: 
