@@ -34,9 +34,9 @@ function Home() {
             {currentActivities.map(activity => (
                 <div key={activity.id} className="row">
                     <div className="col-xl-7 col-lg-9 col-md-10 col-12 mx-auto mb-4">
-                        <div className="card h-100">
-                            <div className="card-body" style={{backgroundColor: activity.color}}>
-                                <div className="d-flex align-items-center mb-3">
+                        <div className="card rounded-4 h-100" style={{backgroundColor: activity.color}}>
+                            <div className="card-header bg-transparent border-0 p-0">
+                                <div className="card-header d-flex align-items-center rounded-top-4 py-2 px-4 mb-1" style={{backgroundColor: '#cecece30'}}>
                                     <span className="fs-1 me-2">{activity.icon}</span>
                                     <h3 className="card-title mb-0">{activity.name}</h3>
                                     <div className="ms-auto">
@@ -46,6 +46,8 @@ function Home() {
                                         </p>
                                     </div>
                                 </div>
+                            </div>
+                            <div className="card-body rounded-4">
                                 {(activity.imageSrc && activity.imageSrc != '') && (
                                     <div className="text-center mb-3">
                                         <img src={'/img/atividades/' + activity.imageSrc}></img>
@@ -54,16 +56,16 @@ function Home() {
                                 <p className="card-text text-center">{activity.description}</p>
                                 { CompletionService.isCompletedToday(activity.id) ?(
                                     <button 
-                                        className='btn btn-success w-100 '
+                                        className='btn btn-success rounded-4 w-100 '
                                         disabled={true}
                                     >
-                                        <span className="ms-2">✅</span>
+                                        <span className="mx-2">✅</span>
                                         Concluído 
                                     </button>
                                 ) 
                                 : (
                                     <button 
-                                        className='btn btn-warning w-100 '
+                                        className='btn btn-warning rounded-4 w-100 '
                                         onClick={() => handleComplete(activity)}
                                     >
                                         Pronto!
