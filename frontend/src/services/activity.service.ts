@@ -22,7 +22,12 @@ export const ActivityService = {
 
     getUserActivities(): UserActivity[] {
         const stored = localStorage.getItem(STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
+        const activities = stored ? JSON.parse(stored) : [];
+
+        // Ordenação por horário ao carregar
+        return activities.sort((a: UserActivity, b: UserActivity) => 
+                a.time.localeCompare(b.time)    
+            );
     },
 
     saveUserActivity(activity: Partial<UserActivity>): void {

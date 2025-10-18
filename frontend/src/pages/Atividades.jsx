@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ActivityService } from '../services/activity.service';
+import { translateRepeat } from '../utils/translations';
 
 function Atividades() {
     const [activities, setActivities] = useState([]);
@@ -16,7 +17,14 @@ function Atividades() {
 
     const loadActivities = () => {
         const userActivities = ActivityService.getUserActivities();
-        setActivities(userActivities);
+
+        const translatedActivities = userActivities.map(activity => ({
+            ...activity,
+            repeatOriginal: activity.repeat,
+            repeat: translateRepeat(activity.repeat) // tradução para exibição
+        }))
+
+        setActivities(translatedActivities);
     };
 
     const handleEdit = (id) => {
@@ -65,7 +73,7 @@ function Atividades() {
                                         <td>{activity.name}</td>
                                         <td>{activity.time}</td>
                                         <td>{activity.isActive ? 'Ativo' : 'Inativo'}</td>
-                                        <td>{activity.repeat}</td>
+                                        <td className='text-capitalize'>{activity.repeat}</td>
                                     </tr>
                                 ))}
                             </tbody>
