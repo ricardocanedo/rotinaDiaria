@@ -38,7 +38,13 @@ function Home() {
                             <div className="card-body" style={{backgroundColor: activity.color}}>
                                 <div className="d-flex align-items-center mb-3">
                                     <span className="fs-1 me-2">{activity.icon}</span>
-                                    <h5 className="card-title mb-0">{activity.name}</h5>
+                                    <h3 className="card-title mb-0">{activity.name}</h3>
+                                    <div className="ms-auto">
+                                        <p className="card-text text-end">
+                                            <span>Horário: </span>
+                                            <span className='fw-bold'>{activity.time}</span>
+                                        </p>
+                                    </div>
                                 </div>
                                 {(activity.imageSrc && activity.imageSrc != '') && (
                                     <div className="text-center mb-3">
@@ -46,10 +52,6 @@ function Home() {
                                     </div>
                                 )}
                                 <p className="card-text text-center">{activity.description}</p>
-                                <p className="card-text">
-                                    <span>Horário: </span>
-                                    <span className='fw-bold'>{activity.time}</span>
-                                </p>
                                 { CompletionService.isCompletedToday(activity.id) ?(
                                     <button 
                                         className='btn btn-success w-100 '
