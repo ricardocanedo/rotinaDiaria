@@ -70,8 +70,6 @@ export const ActivityService = {
 
                 // filtra atividades concluídas
                 if (OcultarContextType.ocultarAtividadesConcluidas && CompletionService.isCompletedToday(activity.id)) {
-                    console.log('filtrou atividade', activity);
-                    
                     return false;
                 } 
                 
@@ -93,5 +91,9 @@ export const ActivityService = {
 
     onToogleOcultarAtividadesConcluidas(value: boolean): void {
         OcultarContextType.serToogleOcultarAtividadesConcluidas(value);
-    }
+    },
+
+    getOcultarAtividadesConcluidas(): boolean {
+        return OcultarContextType.ocultarAtividadesConcluidas;
+    },
 };

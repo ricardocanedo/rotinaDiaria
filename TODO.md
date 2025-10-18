@@ -1,6 +1,6 @@
 # frontend:
 ~~- imagens das atividades~~
-x - ocultar atividades concluídas
+~~- ocultar atividades concluídas~~
 - atualizar lista de atividades na home quando entram no horário de realização (autalmente precisa de refresh)
 - coins
 - dividir as atividas por categorias (em Gerenciar)

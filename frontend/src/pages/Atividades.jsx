@@ -4,10 +4,14 @@ import { ActivityService } from '../services/activity.service';
 
 function Atividades() {
     const [activities, setActivities] = useState([]);
+    const [hideCompleted, setHideCompleted] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
         loadActivities();
+
+        const currentState = ActivityService.getOcultarAtividadesConcluidas();
+        setHideCompleted(currentState);
     }, []);
 
     const loadActivities = () => {
@@ -22,6 +26,11 @@ function Atividades() {
     const handleAdd = () => {
         navigate('/atividades/editar/nova');
     };
+
+    const handleToogleHideCompleted = (checked) => {
+        setHideCompleted(checked);
+        ActivityService.onToogleOcultarAtividadesConcluidas(checked);
+    }
 
     return (
         <div className="mt-4">
@@ -77,7 +86,8 @@ function Atividades() {
                                 className="form-check-input"
                                 type="checkbox"
                                 id="hideCompleted"
-                                onChange={(e) => ActivityService.onToogleOcultarAtividadesConcluidas(e.target.checked)}
+                                checked={hideCompleted}
+                                onChange={(e) => handleToogleHideCompleted(e.target.checked)}
                             />
                             <label className="form-check-label" htmlFor="hideCompleted">
                                 Ocultar atividades concluídas
