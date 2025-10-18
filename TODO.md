@@ -13,7 +13,7 @@
 
 bug: 
 
-x - na tela de editar atividade não está trazendo selecionada a ativdade cadastrada
+~~- na tela de editar atividade não está trazendo selecionada a ativdade cadastrada~~
 
 ---
 

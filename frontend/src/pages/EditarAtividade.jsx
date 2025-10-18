@@ -69,6 +69,9 @@ function EditarAtividade() {
                             <label className="form-label">Atividade Base</label>
                             <select 
                                 className="form-select"
+                                value={availableActivities.findIndex(act => 
+                                    act.name === activity.name
+                                )}
                                 onChange={(e) => handleActivitySelect(availableActivities[e.target.value])}
                             >
                                 <option value="">Selecione uma atividade</option>
