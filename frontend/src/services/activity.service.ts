@@ -1,7 +1,19 @@
 import { Activity, UserActivity } from '../interfaces/activity.interface';
 import availableActivities from '../data/available-activities';
+import { CompletionService } from './completion.service';
+
+interface OcultarContextType {
+    ocultarAtividadesConcluidas: boolean;
+    serToogleOcultarAtividadesConcluidas: (value: boolean) => void;
+}
 
 const STORAGE_KEY = 'user_activities';
+const OcultarContextType: OcultarContextType = {
+    ocultarAtividadesConcluidas: false,
+    serToogleOcultarAtividadesConcluidas: (value: boolean) => {
+        OcultarContextType.ocultarAtividadesConcluidas = value;
+    }
+};
 
 export const ActivityService = {
     getAvailableActivities(): Activity[] {
@@ -51,9 +63,15 @@ export const ActivityService = {
         
         return this.getUserActivities()
             .filter(activity => {
-                console.log('activity', activity, now, currentTime);
-                
-                if (!activity.isActive) return false;
+                // filtra atividades inativas
+                if (!activity.isActive) {
+                    return false;
+                } 
+
+                // filtra atividades concluídas
+                if (OcultarContextType.ocultarAtividadesConcluidas && CompletionService.isCompletedToday(activity.id)) {
+                    return false;
+                } 
                 
                 // Se for atividade diária, compara apenas o horário
                 if (activity.repeat === 'daily') {
@@ -69,5 +87,13 @@ export const ActivityService = {
                 // none, só considera o horario
                 return activity.time <= currentTime;
             });
+    },
+
+    onToogleOcultarAtividadesConcluidas(value: boolean): void {
+        OcultarContextType.serToogleOcultarAtividadesConcluidas(value);
+    },
+
+    getOcultarAtividadesConcluidas(): boolean {
+        return OcultarContextType.ocultarAtividadesConcluidas;
     },
 };
