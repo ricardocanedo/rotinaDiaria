@@ -33,7 +33,7 @@ function Home() {
         <div className="container mt-4">
             <div className="row">
                 {currentActivities.map(activity => (
-                    <div key={activity.id} className="col-xl-4 col-lg-6 col-md-10 col-12 mx-auto mb-4">
+                    <div key={activity.id} className="col-xl-4 col-lg-6 col-md-10 col-12 mx-lg-0 mx-auto mb-4">
                         <div className="card rounded-4 h-100" style={{backgroundColor: activity.color}}>
                             <div className="card-header bg-transparent border-0 p-0">
                                 <div className="card-header d-flex align-items-center rounded-top-4 py-2 px-3 mb-1" style={{backgroundColor: '#cecece30'}}>
@@ -58,7 +58,7 @@ function Home() {
                                         ></img>
                                     </div>
                                 )}
-                                <p className="card-text text-center">{activity.description}</p>
+                                <p className="card-text text-center text-uppercase">{activity.description}</p>
                                 { CompletionService.isCompletedToday(activity.id) ?(
                                     <button 
                                         className='btn btn-success rounded-4 w-100 p-3'
