@@ -37,8 +37,8 @@ function Home() {
                         <div className="card rounded-4 h-100" style={{backgroundColor: activity.color}}>
                             <div className="card-header bg-transparent border-0 p-0">
                                 <div className="card-header d-flex align-items-center rounded-top-4 py-2 px-3 mb-1" style={{backgroundColor: '#cecece30'}}>
-                                    <span className="fs-3 me-2">{activity.icon}</span>
-                                    <h4 className="card-title mb-0">{activity.name}</h4>
+                                    <span className="fs-4 me-2">{activity.icon}</span>
+                                    <h5 className="card-title text-uppercase mb-0">{activity.name}</h5>
                                     <div className="ms-auto">
                                         <p className="card-text text-end">
                                             <span className='fw-bold'>{activity.time}</span>
