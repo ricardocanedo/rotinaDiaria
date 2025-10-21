@@ -11,6 +11,10 @@
 - rever as imagens das atividades para ter todas as atividades disponíveis com suas respectivas imagens
 ~~- ajustar textos dos selects de Repetição para português~~
 ~~- ordenar as atividades por horário na Rotina Diária~~
+- **listar todas as atividades que precisam ser feitas no dia - importante para o aba (segurança da rotina)** 
+- diferenciar figuras dos cards para meninos e meninas com seleção de mudanças nas Configurações
+- melhorar as cores dos cards para cores mais neutras (tons pastéis)
+- opção de desativas as cores de fundo dos cards
 
 bug: 
 

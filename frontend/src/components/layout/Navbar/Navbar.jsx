@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthService } from '../../../services/auth.service'
 import { useEffect, useState } from 'react';
+import Coins from '../Coins/Coins';
 
 function Navbar() {
     const navigate = useNavigate();
@@ -19,9 +20,12 @@ function Navbar() {
     return (
         <nav className="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
             <div className="container">
-                <Link className="navbar-brand fw-bold" to="/">
-                    Rotina Diária
-                </Link>
+                <div className='d-flex'>
+                    <Link className="navbar-brand fw-bold mt-1" to="/">
+                        Rotina Diária
+                    </Link>
+                    <Coins />
+                </div>
                 <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span className="navbar-toggler-icon"></span>
                 </button>
