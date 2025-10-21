@@ -1,3 +1,5 @@
+import { CoinService } from "./coin.service";
+
 interface ActivityCompletion {
     activityId: number;
     completedAt: string;
@@ -18,6 +20,9 @@ export const CompletionService = {
             completedAt: new Date().toISOString()
         });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(completions));
+
+        // adiciona uma moeda ao completar a atividade 
+        CoinService.addCoin(1);
     },
 
     isCompletedToday(activityId: number): boolean {

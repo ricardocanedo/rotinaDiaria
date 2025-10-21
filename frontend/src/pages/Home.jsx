@@ -25,7 +25,7 @@ function Home() {
         }
 
         CompletionService.completeActivity(activity.id);
-        ToastService.success('Atividade concluída com sucesso!');
+        ToastService.success('Atividade concluída! +1 moeda 💰');
         loadCurrentActivities();
     };
 
