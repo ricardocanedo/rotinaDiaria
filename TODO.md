@@ -15,6 +15,7 @@
 - diferenciar figuras dos cards para meninos e meninas com seleção de mudanças nas Configurações
 - melhorar as cores dos cards para cores mais neutras (tons pastéis)
 - opção de desativas as cores de fundo dos cards
+- colocar atividades mais genéricas e menos específicas por conta do pensamento rígido dos usuários
 
 bug: 
 
