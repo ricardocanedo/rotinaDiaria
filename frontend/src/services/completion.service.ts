@@ -31,5 +31,9 @@ export const CompletionService = {
             const completionDate = new Date(completion.completedAt).toDateString();
             return completion.activityId === activityId && completionDate === today;
         });
+    },
+
+    isCompleted(activityId: number): boolean {
+        return this.getCompletions().some(completion => completion.activityId === activityId);
     }
 };

@@ -29,6 +29,9 @@ function Home() {
         loadCurrentActivities();
     };
 
+    const now = new Date();
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
     return (
         <div className="container mt-4">
             <div className="row">
@@ -47,32 +50,43 @@ function Home() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="card-body rounded-4">
+                            <div className="card-body rounded-4 d-flex flex-column">
                                 {(activity.imageSrc && activity.imageSrc != '') && (
                                     <div className="text-center mb-3">
                                         <img 
                                             src={'/img/atividades/' + activity.imageSrc} 
                                             className='rounded-2'
-                                            style={{minWidth: '160px', height: 'auto'}}
+                                            style={{width: '220px', height: 'auto'}}
                                             alt={activity.name}
                                         ></img>
                                     </div>
                                 )}
                                 <p className="card-text text-center text-uppercase">{activity.description}</p>
+
                                 { CompletionService.isCompletedToday(activity.id) ?(
                                     <button 
                                         className='btn btn-success rounded-4 w-100 p-3'
-                                        disabled={true}
+                                        style={{cursor: 'default', pointerEvents: 'none'}}
                                     >
-                                        <span className="mx-2">✅</span>
+                                        <i className="fa fa-check me-2"></i>
                                         Concluído 
                                     </button>
                                 ) 
+                                : (activity.time > currentTime ) ? (
+                                    <button 
+                                        className='btn btn-secondary text-muted rounded-4 w-100 p-3 mt-auto'
+                                        style={{cursor: 'default', pointerEvents: 'none'}}
+                                    >
+                                        <i className="fa fa-clock me-2"></i>
+                                        Aguardando...
+                                    </button>
+                                )
                                 : (
                                     <button 
-                                        className='btn btn-warning rounded-4 w-100 p-3'
+                                        className='btn btn-warning rounded-4 w-100 p-3 mt-auto'
                                         onClick={() => handleComplete(activity)}
                                     >
+                                        <i className="fa fa-flag text-primary me-2"></i>
                                         Pronto!
                                     </button>
                                 )}

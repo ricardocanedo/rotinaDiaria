@@ -62,10 +62,6 @@ export const ActivityService = {
     },
 
     getCurrentActivities(): UserActivity[] {
-        const now = new Date();
-        const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
-                          now.getMinutes().toString().padStart(2, '0');
-        
         return this.getUserActivities()
             .filter(activity => {
                 // filtra atividades inativas
@@ -76,21 +72,14 @@ export const ActivityService = {
                 // filtra atividades concluídas
                 if (OcultarContextType.ocultarAtividadesConcluidas && CompletionService.isCompletedToday(activity.id)) {
                     return false;
-                } 
-                
-                // Se for atividade diária, compara apenas o horário
-                if (activity.repeat === 'daily') {
-                    return activity.time <= currentTime;
                 }
-                
-                // // Se for semanal, verifica também o dia da semana
-                // if (activity.repeat === 'weekly') {
-                //     const today = now.getDay();
-                //     return activity.time <= currentTime;
-                // }
-                
-                // none, só considera o horario
-                return activity.time <= currentTime;
+
+                // filtra ativididades concluídas que não se repetem
+                if (activity.repeat === 'none' && CompletionService.isCompleted(activity.id)) {
+                    return false;
+                }
+
+                return true;
             });
     },
 
