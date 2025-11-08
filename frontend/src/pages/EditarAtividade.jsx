@@ -85,7 +85,10 @@ function EditarAtividade() {
 
                         {(activity.imageSrc && activity.imageSrc != '') && (
                             <div className="text-center mb-3">
-                                <img src={'/img/atividades/' + activity.imageSrc}></img>
+                                <img 
+                                    style={{width: '220px', height: 'auto'}}
+                                    src={'/img/atividades/' + activity.imageSrc}
+                                ></img>
                             </div>
                         )}
 

@@ -47,13 +47,13 @@ function Home() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="card-body rounded-4">
+                            <div className="card-body rounded-4 d-flex flex-column">
                                 {(activity.imageSrc && activity.imageSrc != '') && (
                                     <div className="text-center mb-3">
                                         <img 
                                             src={'/img/atividades/' + activity.imageSrc} 
                                             className='rounded-2'
-                                            style={{minWidth: '160px', height: 'auto'}}
+                                            style={{width: '220px', height: 'auto'}}
                                             alt={activity.name}
                                         ></img>
                                     </div>
@@ -70,7 +70,7 @@ function Home() {
                                 ) 
                                 : (
                                     <button 
-                                        className='btn btn-warning rounded-4 w-100 p-3'
+                                        className='btn btn-warning rounded-4 w-100 p-3 mt-auto'
                                         onClick={() => handleComplete(activity)}
                                     >
                                         Pronto!
